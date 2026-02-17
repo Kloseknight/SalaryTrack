@@ -1,0 +1,7 @@
+{
+  "name": "SalaryTrack Pro",
+  "description": "A personal finance companion to track salary progression, extract data from pay stubs using AI, and visualize lifetime earnings.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
