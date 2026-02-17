@@ -24,7 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ activeView, onViewChange, children }) =
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-32 px-4 pt-6 scrollbar-hide">
+      <main className="flex-1 overflow-y-auto pb-32 px-4 pt-6 scrollbar-hide min-w-0">
         {children}
       </main>
 

@@ -38,6 +38,7 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<'income' | 'wealth'>('income');
   const [activeInfo, setActiveInfo] = useState<keyof typeof METRIC_DEFS | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: 'total' | 'name'; direction: 'asc' | 'desc' }>({ key: 'total', direction: 'desc' });
 
   const currency = entries[0]?.currency || 'USD';
   
@@ -102,8 +103,24 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         totals[id].total += d.amount;
       });
     });
-    return Object.values(totals).sort((a, b) => b.total - a.total);
-  }, [entries]);
+    
+    const result = Object.values(totals);
+    
+    return result.sort((a, b) => {
+      const isAsc = sortConfig.direction === 'asc' ? 1 : -1;
+      if (sortConfig.key === 'total') {
+        return (a.total - b.total) * isAsc;
+      }
+      return a.name.localeCompare(b.name) * isAsc;
+    });
+  }, [entries, sortConfig]);
+
+  const handleSort = (key: 'total' | 'name') => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+    }));
+  };
 
   const InfoModal = () => {
     if (!activeInfo) return null;
@@ -211,9 +228,9 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
               </div>
             </>
           ) : (
-            <div className="space-y-6">
-              <div className="h-44 w-full">
-                <ResponsiveContainer width="100%" height="100%">
+            <div className="space-y-8">
+              <div className="h-44 w-full relative min-w-0">
+                <ResponsiveContainer width="100%" height="100%" debounce={100}>
                   <PieChart>
                     <Pie data={disbursementTotals} dataKey="total" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4}>
                       {disbursementTotals.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />)}
@@ -222,16 +239,55 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="grid grid-cols-2 gap-2 overflow-x-auto scrollbar-hide">
-                {disbursementTotals.map((d, i) => (
-                  <div key={i} className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5 min-w-[140px]">
-                    <div className="flex items-center space-x-2 truncate">
-                      <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
-                      <p className="text-[10px] font-bold truncate text-slate-300">{d.name}</p>
-                    </div>
-                    <p className="text-[10px] font-bold text-indigo-400 ml-1">{formatCurrency(d.total, true)}</p>
-                  </div>
-                ))}
+
+              {/* Detailed Disbursement Table */}
+              <div className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-sm">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/5">
+                      <th 
+                        onClick={() => handleSort('name')}
+                        className="p-4 text-[9px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>Bank Channel</span>
+                          {sortConfig.key === 'name' && (
+                            <span className="text-indigo-400">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSort('total')}
+                        className="p-4 text-right text-[9px] font-bold text-slate-400 uppercase tracking-widest cursor-pointer hover:text-white transition-colors"
+                      >
+                        <div className="flex items-center justify-end space-x-1">
+                          <span>Total Flow</span>
+                          {sortConfig.key === 'total' && (
+                            <span className="text-indigo-400">{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {disbursementTotals.map((d, i) => (
+                      <tr key={`${d.name}-${d.account}`} className="hover:bg-white/5 transition-colors group">
+                        <td className="p-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-1.5 h-1.5 rounded-full shrink-0 shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{backgroundColor: COLORS[i % COLORS.length]}}></div>
+                            <div className="truncate">
+                              <p className="text-[11px] font-bold text-slate-200 truncate group-hover:text-white transition-colors">{d.name}</p>
+                              <p className="text-[9px] text-slate-500 font-medium">**** {d.account.slice(-4)}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right">
+                          <p className="text-[11px] font-bold text-indigo-400 group-hover:scale-105 origin-right transition-transform">{formatCurrency(d.total, true)}</p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
@@ -244,8 +300,8 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-8 px-2">
           {viewMode === 'income' ? 'Historic Income Velocity' : 'Distribution Trajectory'}
         </h3>
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 w-full relative min-w-0">
+          <ResponsiveContainer width="100%" height="100%" debounce={100}>
             {viewMode === 'income' ? (
               <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />

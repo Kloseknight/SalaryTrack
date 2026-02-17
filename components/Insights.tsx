@@ -109,8 +109,8 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
             </div>
           </div>
 
-          <div className="h-44 w-full">
-             <ResponsiveContainer width="100%" height="100%">
+          <div className="h-44 w-full relative min-w-0">
+             <ResponsiveContainer width="100%" height="100%" debounce={100}>
                <AreaChart data={analysis.hourlyTrendData}>
                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#cbd5e1'}} />
