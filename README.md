@@ -1,28 +1,40 @@
 
 # 💼 SalaryTrack Pro
-### Your Lifetime Career & Earnings Ledger
+### Private Career Financial Ledger & Trajectory Audit
 
-SalaryTrack Pro is a private, AI-powered financial companion designed specifically for long-term career tracking. Built as a Progressive Web App (PWA) optimized for iPhone 13+, it allows you to digitize every pay stub and visualize your growth over decades.
+SalaryTrack Pro is a high-performance, private Progressive Web App (PWA) designed for tracking lifetime salary progression. Optimized for iOS, it uses local storage for sovereign data control and Google Gemini for automated document digitizing.
 
-## 🚀 Key Features
-- **AI Extraction**: Scan a PDF or photo of your pay stub. It automatically breaks down every earning, deduction, and tax item using Google Gemini.
-- **Lifetime Archive**: Track not just net pay, but hours worked, job titles, departments, and cumulative wealth.
-- **Privacy First**: All data is stored locally on your device's `localStorage`. No cloud database tracking your income.
-- **Granular Ledger**: "Every line item" tracking ensures benefits, pension contributions, and local taxes are never missed.
-- **Wealth Advisor**: Get AI-driven insights into your labor efficiency and career progression.
+## 🚀 Live Deployment Instructions
 
-## 📱 Installation (iOS)
-1. Open the deployed URL in **Safari**.
-2. Tap the **Share** icon (square with arrow).
-3. Select **Add to Home Screen**.
-4. Launch from your home screen for a full-screen app experience.
+This app is ready for Vercel and GitHub.
 
-## 🛠 Tech Stack
-- **Frontend**: React 19 + TypeScript
-- **Styling**: Tailwind CSS (iOS Design Language)
-- **Charts**: Recharts
-- **AI**: Google Gemini 3 (for extraction and insights)
-- **Persistence**: Local Storage API
+### 1. Repository Setup
+```bash
+git init
+git add .
+git commit -m "Deployment release"
+# Connect to your SalaryTrack repo
+git remote add origin https://github.com/your-username/SalaryTrack.git
+git push -u origin main
+```
 
-## 💾 Data Portability
-You own your data. Use the **Export Backup** feature in the Dashboard to download your entire career history as a JSON file. Store this in your iCloud Drive for permanent safety.
+### 2. Vercel Hosting
+- Link your GitHub repository to [Vercel](https://vercel.com).
+- **Environment Variables**: Add `API_KEY` in the project settings. This key must be a valid Google Gemini API Key.
+- Deploy.
+
+### 3. iOS "Native" Installation
+1. Open your Vercel URL in **Safari** on iPhone.
+2. Tap the **Share** button.
+3. Select **"Add to Home Screen"**.
+4. The app will launch without a browser address bar, respecting the safe area insets for a full-screen experience.
+
+## 🛡 Security & Privacy
+- **Zero Database**: Your salary data is stored in your device's `localStorage`.
+- **AI Processing**: Images are processed transiently via the Gemini API to extract text. No images are stored on any server by this application.
+- **Portability**: Use the **Export Archive** feature on the dashboard to save a JSON backup to your Files app or iCloud Drive.
+
+## 🛠 Strategic Features
+- **Metric Dictionary**: Interactive definitions of Momentum, Hourly Value, and Keep Rate.
+- **Future Wealth Projection**: Estimates lifetime career yield based on current velocity.
+- **Comparative Deltas**: Automatic period-over-period performance auditing.

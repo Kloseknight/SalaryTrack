@@ -19,13 +19,13 @@ export const geminiService = {
           {
             text: `Extract ALL salary details from this document. 
             Be extremely granular. Extract:
-            1. Basic info: source (employer), date (YYYY-MM-DD), currency (Must be 3-letter ISO code like USD, GBP, EUR), taxCode.
-            2. Career info: jobTitle (e.g. Senior Engineer), department (e.g. Sales).
-            3. Metrics: workedHours (number of hours worked).
-            4. Summary: grossAmount (current), amount (net pay current), tax (current), deductions (total current).
+            1. Basic info: source (employer), date (YYYY-MM-DD), currency, taxCode.
+            2. Career info: jobTitle, department.
+            3. Metrics: workedHours.
+            4. Summary: grossAmount, amount (net), tax, deductions.
             5. YTD: ytdGross, ytdNet.
-            6. Line Items: An array of objects with {name, amount, ytd, type: 'earning'|'deduction'|'benefit'}.
-            7. Disbursements: An array of objects from the bank details table with {bankCode, bankName, accountNo, amount}. This describes where the net pay was sent.`,
+            6. Line Items: {name, amount, ytd, type: 'earning'|'deduction'|'benefit'}.
+            7. Disbursements: {bankCode, bankName, accountNo, amount}.`,
           },
         ],
       },
@@ -87,21 +87,52 @@ export const geminiService = {
   getFinancialInsights: async (entries: FinancialEntry[]): Promise<string> => {
     if (entries.length === 0) return "Add some transactions to see your financial growth analysis.";
 
-    const summary = entries.slice(0, 10).map(e => {
-      const lineSummary = e.lineItems ? e.lineItems.map(li => `${li.name}: ${li.amount}`).join(', ') : '';
-      return `${e.date} [${e.type.toUpperCase()}] ${e.source}: ${e.amount} (Role: ${e.jobTitle || 'N/A'}, Dept: ${e.department || 'N/A'}, Hours: ${e.workedHours || 'N/A'}). Items: ${lineSummary}`;
+    const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    
+    const growthRate = first.grossAmount && last.grossAmount 
+      ? (((last.grossAmount - first.grossAmount) / first.grossAmount) * 100).toFixed(1) 
+      : "N/A";
+    
+    const avgHourly = sorted.filter(e => (e.workedHours ?? 0) > 0)
+      .reduce((acc, e) => acc + ((e.grossAmount || 0) / (e.workedHours || 1)), 0) / (sorted.filter(e => (e.workedHours ?? 0) > 0).length || 1);
+
+    const taxEfficiency = sorted.reduce((acc, e) => acc + (e.amount / (e.grossAmount || e.amount)), 0) / sorted.length;
+
+    // Aggregate disbursement channels for AI analysis
+    const channelTotals: Record<string, number> = {};
+    entries.forEach(e => {
+      e.disbursements?.forEach(d => {
+        channelTotals[d.bankName] = (channelTotals[d.bankName] || 0) + d.amount;
+      });
+    });
+
+    const summary = sorted.slice(-12).map(e => {
+      return `${e.date}: Gross ${e.grossAmount}, Net ${e.amount}, Hours ${e.workedHours}, Job: ${e.jobTitle}`;
     }).join('\n');
     
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `You are a high-end wealth strategist. Analyze these career and financial entries. 
-      Focus on income growth, hourly rate trends (if hours provided), and career progression.
-      Provide 4 powerful insights.
+      contents: `You are an elite Career & Wealth Strategist. Analyze this specific data profile:
       
-      History:
-      ${summary}`,
+      STATISTICAL SUMMARY:
+      - Period: ${first.date} to ${last.date}
+      - Total Gross Growth: ${growthRate}%
+      - Avg Hourly Rate (Gross): ${avgHourly.toFixed(2)}
+      - Tax/Deduction Leakage: ${((1 - taxEfficiency) * 100).toFixed(1)}%
+      - Wealth Distribution: ${JSON.stringify(channelTotals)}
+
+      DETAILED HISTORY:
+      ${summary}
+
+      TASK: Provide 4 high-impact, data-driven insights. Focus on:
+      1. Career Velocity (Is the value of your hour increasing faster than inflation?)
+      2. Tax Optimization (Flag any increase in deduction leakage percentages)
+      3. Wealth Flow Diversification (Analyze the distribution across your bank channels. Is the allocation to savings/investment accounts growing?)
+      4. Strategy Recommendation (Concrete advice on negotiation or allocation based on this momentum)`,
       config: {
-        systemInstruction: "You are an elite personal wealth manager. Provide high-impact, brief, and actionable advice.",
+        systemInstruction: "You are a clinical wealth analyst. Use numbers and hard logic. Be brief but punchy.",
       }
     });
 

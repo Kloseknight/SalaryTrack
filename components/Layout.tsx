@@ -28,9 +28,9 @@ const Layout: React.FC<LayoutProps> = ({ activeView, onViewChange, children }) =
         {children}
       </main>
 
-      {/* Bottom Navigation with iOS Safe Area */}
-      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-slate-100 z-30 safe-bottom">
-        <div className="flex justify-around items-center h-16">
+      {/* Bottom Navigation with iOS Safe Area Padding */}
+      <nav className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur-xl border-t border-slate-100 z-30 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex justify-around items-center h-20">
           <button 
             onClick={() => onViewChange('dashboard')}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${activeView === 'dashboard' ? 'text-indigo-600 scale-110' : 'text-slate-300'}`}
