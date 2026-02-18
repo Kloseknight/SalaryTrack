@@ -17,15 +17,17 @@ export const geminiService = {
             },
           },
           {
-            text: `Extract ALL salary details from this document. 
-            Be extremely granular. Extract:
-            1. Basic info: source (employer), date (YYYY-MM-DD), currency, taxCode.
-            2. Career info: jobTitle, department.
-            3. Metrics: workedHours.
-            4. Summary: grossAmount, amount (net), tax, deductions.
-            5. YTD: ytdGross, ytdNet.
-            6. Line Items: {name, amount, ytd, type: 'earning'|'deduction'|'benefit'}.
-            7. Disbursements: {bankCode, bankName, accountNo, amount}.`,
+            text: `Extract salary data exactly as printed on the document.
+            IMPORTANT: Do not calculate your own totals. Use the document's provided totals.
+            1. Basic info: source (employer), date (YYYY-MM-DD), currency (3-letter ISO).
+            2. Summary Fields (Extract directly from summary section):
+               - grossAmount: Total Earnings/Gross Pay.
+               - amount: Net Pay/Take-home.
+               - tax: Total Tax withheld.
+               - deductions: Total of non-tax deductions (benefits, pension, etc.).
+            3. Detailed Items: List every entry for earnings/deductions. 
+               - items: {name, amount, ytd, type: 'earning'|'deduction'|'benefit'}.
+            4. Career: jobTitle, department.`,
           },
         ],
       },
@@ -37,7 +39,6 @@ export const geminiService = {
             source: { type: Type.STRING },
             date: { type: Type.STRING },
             currency: { type: Type.STRING },
-            taxCode: { type: Type.STRING },
             jobTitle: { type: Type.STRING },
             department: { type: Type.STRING },
             workedHours: { type: Type.NUMBER },
@@ -45,8 +46,6 @@ export const geminiService = {
             amount: { type: Type.NUMBER },
             tax: { type: Type.NUMBER },
             deductions: { type: Type.NUMBER },
-            ytdGross: { type: Type.NUMBER },
-            ytdNet: { type: Type.NUMBER },
             lineItems: {
               type: Type.ARRAY,
               items: {
@@ -56,18 +55,6 @@ export const geminiService = {
                   amount: { type: Type.NUMBER },
                   ytd: { type: Type.NUMBER },
                   type: { type: Type.STRING }
-                }
-              }
-            },
-            disbursements: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  bankCode: { type: Type.STRING },
-                  bankName: { type: Type.STRING },
-                  accountNo: { type: Type.STRING },
-                  amount: { type: Type.NUMBER }
                 }
               }
             }
@@ -85,7 +72,7 @@ export const geminiService = {
   },
 
   getFinancialInsights: async (entries: FinancialEntry[]): Promise<string> => {
-    if (entries.length === 0) return "Add some transactions to see your financial growth analysis.";
+    if (entries.length === 0) return "No data for analysis.";
 
     const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const first = sorted[0];
@@ -93,49 +80,18 @@ export const geminiService = {
     
     const growthRate = first.grossAmount && last.grossAmount 
       ? (((last.grossAmount - first.grossAmount) / first.grossAmount) * 100).toFixed(1) 
-      : "N/A";
-    
-    const avgHourly = sorted.filter(e => (e.workedHours ?? 0) > 0)
-      .reduce((acc, e) => acc + ((e.grossAmount || 0) / (e.workedHours || 1)), 0) / (sorted.filter(e => (e.workedHours ?? 0) > 0).length || 1);
+      : "0";
 
-    const taxEfficiency = sorted.reduce((acc, e) => acc + (e.amount / (e.grossAmount || e.amount)), 0) / sorted.length;
-
-    // Aggregate disbursement channels for AI analysis
-    const channelTotals: Record<string, number> = {};
-    entries.forEach(e => {
-      e.disbursements?.forEach(d => {
-        channelTotals[d.bankName] = (channelTotals[d.bankName] || 0) + d.amount;
-      });
-    });
-
-    const summary = sorted.slice(-12).map(e => {
-      return `${e.date}: Gross ${e.grossAmount}, Net ${e.amount}, Hours ${e.workedHours}, Job: ${e.jobTitle}`;
-    }).join('\n');
-    
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `You are an elite Career & Wealth Strategist. Analyze this specific data profile:
-      
-      STATISTICAL SUMMARY:
-      - Period: ${first.date} to ${last.date}
-      - Total Gross Growth: ${growthRate}%
-      - Avg Hourly Rate (Gross): ${avgHourly.toFixed(2)}
-      - Tax/Deduction Leakage: ${((1 - taxEfficiency) * 100).toFixed(1)}%
-      - Wealth Distribution: ${JSON.stringify(channelTotals)}
-
-      DETAILED HISTORY:
-      ${summary}
-
-      TASK: Provide 4 high-impact, data-driven insights. Focus on:
-      1. Career Velocity (Is the value of your hour increasing faster than inflation?)
-      2. Tax Optimization (Flag any increase in deduction leakage percentages)
-      3. Wealth Flow Diversification (Analyze the distribution across your bank channels. Is the allocation to savings/investment accounts growing?)
-      4. Strategy Recommendation (Concrete advice on negotiation or allocation based on this momentum)`,
+      contents: `Analyze this salary profile. Period: ${first.date} to ${last.date}. Growth: ${growthRate}%. 
+      Identify trends in specific earnings items or deductions. Note any changes in tax percentage or benefits allocation.
+      Keep it brief and professional.`,
       config: {
-        systemInstruction: "You are a clinical wealth analyst. Use numbers and hard logic. Be brief but punchy.",
+        systemInstruction: "You are a professional payroll analyst. Use bullet points.",
       }
     });
 
-    return response.text || "No insights available.";
+    return response.text || "Insights pending.";
   }
 };

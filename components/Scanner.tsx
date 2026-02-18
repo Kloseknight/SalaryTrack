@@ -21,11 +21,7 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
     currency: 'USD',
     jobTitle: '',
     department: '',
-    workedHours: 0,
-    ytdGross: 0,
-    ytdNet: 0,
-    lineItems: [],
-    disbursements: []
+    lineItems: []
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,18 +31,12 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64 = reader.result as string;
-      const mimeType = file.type;
-      
       setLoading(true);
       try {
-        const extracted = await geminiService.extractSalaryFromImage(base64, mimeType);
-        setForm(prev => ({
-          ...prev,
-          ...extracted,
-          category: 'Salary'
-        }));
+        const extracted = await geminiService.extractSalaryFromImage(base64, file.type);
+        setForm(prev => ({ ...prev, ...extracted }));
       } catch (err) {
-        alert("Extraction failed. Please check the file format.");
+        alert("Digitization failed. Please check the file.");
       } finally {
         setLoading(false);
       }
@@ -74,7 +64,7 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.amount || !form.source) {
-      alert("Please fill in basic details.");
+      alert("Please provide the Employer and Net Amount.");
       return;
     }
 
@@ -91,230 +81,141 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
       currency: form.currency || 'USD',
       jobTitle: form.jobTitle,
       department: form.department,
-      workedHours: Number(form.workedHours || 0),
-      ytdGross: Number(form.ytdGross || 0),
-      ytdNet: Number(form.ytdNet || 0),
-      lineItems: form.lineItems || [],
-      disbursements: form.disbursements || []
+      lineItems: form.lineItems || []
     };
 
     onEntryAdded(newEntry);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-widest mb-6 px-2 text-center">Scan Salary Document</h3>
+    <div className="space-y-6 pb-12">
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-8 text-center">Digitize Document</h3>
         <button 
           onClick={() => fileInputRef.current?.click()}
-          className="w-full py-12 border-2 border-dashed border-indigo-100 rounded-3xl flex flex-col items-center justify-center space-y-4 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
+          className="w-full py-12 border-2 border-dashed border-indigo-100 rounded-[2rem] flex flex-col items-center justify-center space-y-4 hover:border-indigo-400 hover:bg-indigo-50/30 transition-all group"
         >
-          <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
           <div className="text-center">
-            <p className="text-sm font-bold text-slate-800">Upload Pay Stub</p>
-            <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Supports PDF or Photo</p>
+            <p className="text-sm font-bold text-slate-800">Choose Pay Stub</p>
+            <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest">Image or PDF (Safe Area)</p>
           </div>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload} 
-            accept="application/pdf,image/*" 
-            className="hidden" 
-          />
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="application/pdf,image/*" className="hidden" />
         </button>
         {loading && (
           <div className="mt-8 flex flex-col items-center space-y-3">
-             <div className="flex space-x-2">
-                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                <div className="w-2 h-2 bg-indigo-600 rounded-full animate-bounce"></div>
-             </div>
-            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">AI Digitizing Document</span>
+            <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest animate-pulse">Extracting Data...</span>
           </div>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 space-y-8 pb-12">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Payroll Verification</h3>
-          {form.source && <span className="text-[9px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold uppercase tracking-tighter">Verified</span>}
-        </div>
-        
-        <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 space-y-8">
+        <div className="space-y-6">
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Employer / Institution</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-3 block">Employer Entity</label>
             <input 
               value={form.source} 
-              onChange={e => setForm({...form, source: e.target.value})}
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none font-bold"
-              placeholder="e.g. Acme Corp Ltd"
+              onChange={e => setForm({...form, source: e.target.value})} 
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none" 
+              placeholder="e.g. Acme Corp"
             />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Job Description</label>
+              <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1 mb-3 block">Net Take-Home</label>
               <input 
-                value={form.jobTitle || ''} 
-                onChange={e => setForm({...form, jobTitle: e.target.value})}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 focus:outline-none text-xs font-semibold"
-                placeholder="Job Role"
+                type="number" 
+                value={form.amount || ''} 
+                onChange={e => setForm({...form, amount: Number(e.target.value)})} 
+                className="w-full px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-sm font-bold outline-none" 
+                placeholder="0.00"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Department</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Gross Total</label>
               <input 
-                value={form.department || ''} 
-                onChange={e => setForm({...form, department: e.target.value})}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 focus:outline-none text-xs font-semibold"
-                placeholder="Business Unit"
+                type="number" 
+                value={form.grossAmount || ''} 
+                onChange={e => setForm({...form, grossAmount: Number(e.target.value)})} 
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
+                placeholder="0.00"
               />
             </div>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100">
-             <label className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-2 block">Net Take-Home Pay</label>
-             <input 
-              type="number"
-              value={form.amount || ''} 
-              onChange={e => setForm({...form, amount: Number(e.target.value)})}
-              className="w-full bg-transparent text-4xl font-bold text-indigo-600 focus:outline-none placeholder-indigo-200"
-              placeholder="0.00"
-            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Total Gross</label>
+              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-widest ml-1 mb-3 block">Tax Withheld</label>
               <input 
-                type="number"
-                value={form.grossAmount || ''} 
-                onChange={e => setForm({...form, grossAmount: Number(e.target.value)})}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none font-bold"
+                type="number" 
+                value={form.tax || ''} 
+                onChange={e => setForm({...form, tax: Number(e.target.value)})} 
+                className="w-full px-6 py-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-800 text-sm font-bold outline-none" 
                 placeholder="0.00"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-widest ml-1 mb-2 block">Total Deductions</label>
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Other Deductions</label>
               <input 
-                type="number"
-                value={(form.tax || 0) + (form.deductions || 0) || ''} 
-                onChange={e => setForm({...form, deductions: Number(e.target.value)})}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-rose-600 focus:outline-none font-bold"
+                type="number" 
+                value={form.deductions || ''} 
+                onChange={e => setForm({...form, deductions: Number(e.target.value)})} 
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
                 placeholder="0.00"
               />
             </div>
           </div>
         </div>
 
-        {/* Detailed Line Items with Editing */}
-        <div className="space-y-3 bg-slate-50/30 p-5 rounded-[2rem] border border-slate-100">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Every Line Item</h4>
+        <div className="pt-6 border-t border-slate-100">
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Itemized Ledger</h4>
             <button 
-              type="button"
-              onClick={addManualLineItem}
-              className="text-[9px] font-bold text-indigo-600 uppercase tracking-tighter bg-indigo-50 px-3 py-1 rounded-full"
+              type="button" 
+              onClick={addManualLineItem} 
+              className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
             >
-              + Add Item
+              + Add Entry
             </button>
           </div>
           <div className="space-y-4">
             {form.lineItems?.map((item, idx) => (
-              <div key={idx} className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm space-y-3">
-                <div className="flex justify-between items-start">
-                   <input 
-                      className="text-xs font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 w-2/3"
-                      value={item.name}
-                      onChange={(e) => updateLineItem(idx, 'name', e.target.value)}
-                   />
-                   <button onClick={() => removeLineItem(idx)} className="text-slate-300 hover:text-rose-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                   </button>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-2">
-                    <select 
-                      value={item.type}
-                      onChange={(e) => updateLineItem(idx, 'type', e.target.value)}
-                      className="text-[8px] uppercase font-bold text-slate-400 bg-slate-50 border-none rounded-lg py-1 px-2"
-                    >
-                      <option value="earning">Earning</option>
-                      <option value="deduction">Deduction</option>
-                      <option value="benefit">Benefit</option>
-                    </select>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-[10px] font-bold text-slate-300">$</span>
-                    <input 
-                      type="number"
-                      className={`text-xs font-bold text-right bg-transparent border-none p-0 focus:ring-0 w-20 ${item.type === 'earning' ? 'text-emerald-600' : 'text-rose-500'}`}
-                      value={item.amount}
-                      onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))}
-                    />
-                  </div>
+              <div key={idx} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between gap-4 border border-slate-100 group">
+                <input 
+                  value={item.name} 
+                  onChange={(e) => updateLineItem(idx, 'name', e.target.value)} 
+                  className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 w-full focus:ring-0" 
+                />
+                <div className="flex items-center gap-3 shrink-0">
+                  <input 
+                    type="number" 
+                    value={item.amount} 
+                    onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))} 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold w-20 text-right text-slate-600 outline-none" 
+                  />
+                  <button 
+                    onClick={() => removeLineItem(idx)} 
+                    className="text-slate-300 hover:text-rose-500 transition-colors text-xl font-light"
+                  >
+                    ×
+                  </button>
                 </div>
               </div>
             ))}
-            {(!form.lineItems || form.lineItems.length === 0) && (
-              <p className="text-[9px] text-slate-300 italic text-center py-4">No line items extracted. Add manually to ensure perfect tracking.</p>
-            )}
-          </div>
-        </div>
-
-        {form.disbursements && form.disbursements.length > 0 && (
-          <div className="space-y-3 bg-indigo-50/30 p-5 rounded-[2rem] border border-indigo-100/50">
-             <h4 className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest ml-1">Payment Destinations</h4>
-             <div className="space-y-2">
-               {form.disbursements.map((d, i) => (
-                 <div key={i} className="flex justify-between items-center text-[11px]">
-                   <div className="flex flex-col">
-                    <span className="font-bold text-slate-600">{d.bankName}</span>
-                    <span className="text-[9px] text-slate-400">#{d.accountNo}</span>
-                   </div>
-                   <span className="text-indigo-600 font-bold">${d.amount.toLocaleString()}</span>
-                 </div>
-               ))}
-             </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Period End Date</label>
-            <input 
-              type="date"
-              value={form.date} 
-              onChange={e => setForm({...form, date: e.target.value})}
-              className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none text-xs font-bold"
-            />
-          </div>
-          <div>
-             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Total Hours</label>
-              <input 
-                type="number"
-                value={form.workedHours || ''} 
-                onChange={e => setForm({...form, workedHours: Number(e.target.value)})}
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 focus:outline-none font-bold"
-                placeholder="0"
-              />
           </div>
         </div>
 
         <button 
-          type="submit"
-          className="w-full py-6 bg-indigo-600 text-white rounded-[2rem] font-bold text-lg shadow-2xl shadow-indigo-200 active:scale-[0.98] transition-all"
+          type="submit" 
+          className="w-full py-6 bg-slate-900 text-white rounded-3xl font-bold text-sm shadow-xl shadow-slate-200 active:scale-[0.98] transition-all"
         >
-          Archive Slip Forever
+          Submit Entry
         </button>
       </form>
     </div>

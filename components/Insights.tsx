@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { FinancialEntry } from '../types';
+import { FinancialEntry, LineItem } from '../types';
 import { geminiService } from '../services/geminiService';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 
 interface InsightsProps {
   entries: FinancialEntry[];
 }
 
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
 const Insights: React.FC<InsightsProps> = ({ entries }) => {
   const [insights, setInsights] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [selectedItemName, setSelectedItemName] = useState<string>('');
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -20,7 +23,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         const text = await geminiService.getFinancialInsights(entries);
         setInsights(text);
       } catch (err) {
-        setInsights("Career analysis engine paused. Retrying connectivity...");
+        setInsights("Career analysis currently unavailable.");
       } finally {
         setLoading(false);
       }
@@ -28,142 +31,151 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
     fetchInsights();
   }, [entries]);
 
-  const currency = entries[0]?.currency || 'USD';
+  const rawCurrency = entries[0]?.currency || 'USD';
+  const currency = useMemo(() => {
+    if (typeof rawCurrency !== 'string' || rawCurrency.length !== 3) return 'USD';
+    const upper = rawCurrency.toUpperCase();
+    return /^[A-Z]{3}$/.test(upper) ? upper : 'USD';
+  }, [rawCurrency]);
 
-  const analysis = useMemo(() => {
-    if (entries.length === 0) return null;
-    const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const latest = sorted[sorted.length - 1];
-    const first = sorted[0];
-    
-    // Efficiency calculation
-    const retentionRate = (entries.reduce((a, b) => a + b.amount, 0) / entries.reduce((a, b) => a + (b.grossAmount || b.amount), 0) * 100);
-    const hourlyRate = entries.filter(e => (e.workedHours || 0) > 0).length 
-      ? entries.filter(e => (e.workedHours || 0) > 0).reduce((acc, e) => acc + ((e.grossAmount || 0) / (e.workedHours || 1)), 0) / entries.filter(e => (e.workedHours || 0) > 0).length
-      : 0;
-
-    // Projection calculation (Hypothetical career target)
-    // Assume 35 years of work total if not enough data
-    const monthsDiff = (new Date(latest.date).getTime() - new Date(first.date).getTime()) / (1000 * 60 * 60 * 24 * 30.44);
-    const avgMonthlyGross = entries.reduce((a, b) => a + (b.grossAmount || b.amount), 0) / (monthsDiff || 1);
-    const lifetimeProjection = avgMonthlyGross * 12 * 35; // 35 year career estimate
-
-    const hourlyTrendData = sorted.map(e => ({
-      date: new Date(e.date).toLocaleDateString('en-US', { month: 'short' }),
-      hourly: (e.workedHours || 0) > 0 ? (e.grossAmount || e.amount) / e.workedHours : 0
-    })).slice(-12);
-
-    return { retentionRate, hourlyRate, lifetimeProjection, hourlyTrendData, latest };
-  }, [entries]);
-
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currency,
-      maximumFractionDigits: 0,
-      notation: val > 999999 ? 'compact' : 'standard'
-    }).format(val);
+  const formatCurrency = (val: number, compact = false) => {
+    try {
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: currency, 
+        maximumFractionDigits: 0, 
+        notation: compact ? 'compact' : 'standard' 
+      }).format(val);
+    } catch (e) {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    }
   };
 
-  return (
-    <div className="space-y-6 pb-24 px-2">
-      {/* High-Level Scorecard */}
-      <div className="bg-slate-900 rounded-[2.8rem] p-10 text-white shadow-2xl relative overflow-hidden">
-        <div className="relative z-10">
-          <h3 className="text-2xl font-bold mb-8 tracking-tight">Career Scorecard</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-sm">
-               <p className="text-[9px] font-bold text-indigo-300 uppercase tracking-[0.2em] mb-2">Efficiency</p>
-               <p className="text-2xl font-bold tracking-tight">{(analysis?.hourlyRate || 0).toFixed(2)}</p>
-               <p className="text-[9px] text-slate-400 mt-1 uppercase font-bold tracking-widest">{currency}/hr value</p>
-            </div>
-            <div className="bg-white/5 p-6 rounded-[2rem] border border-white/10 backdrop-blur-sm">
-               <p className="text-[9px] font-bold text-emerald-300 uppercase tracking-[0.2em] mb-2">Keep Grade</p>
-               <p className="text-2xl font-bold tracking-tight">{(analysis?.retentionRate || 0).toFixed(0)}%</p>
-               <span className={`text-[8px] font-bold px-2 py-0.5 rounded mt-2 inline-block uppercase tracking-widest ${analysis?.retentionRate && analysis.retentionRate > 75 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}`}>
-                  {analysis?.retentionRate && analysis.retentionRate > 75 ? 'Optimal' : 'Leakage'}
-               </span>
-            </div>
-          </div>
-        </div>
-        <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-500/10 rounded-full -mr-24 -mt-24 blur-[100px]"></div>
+  const allItemNames = useMemo(() => {
+    const names = new Set<string>();
+    entries.forEach(e => {
+      e.lineItems?.forEach(li => names.add(li.name));
+    });
+    return Array.from(names).sort();
+  }, [entries]);
+
+  useEffect(() => {
+    if (allItemNames.length > 0 && !selectedItemName) {
+      setSelectedItemName(allItemNames[0]);
+    }
+  }, [allItemNames]);
+
+  const selectedItemHistory = useMemo(() => {
+    if (!selectedItemName) return [];
+    return [...entries]
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(e => {
+        const item = e.lineItems?.find(li => li.name === selectedItemName);
+        return {
+          date: new Date(e.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+          amount: item?.amount || 0,
+          type: item?.type || 'earning'
+        };
+      });
+  }, [selectedItemName, entries]);
+
+  if (entries.length === 0) {
+    return (
+      <div className="py-32 text-center opacity-40 min-h-[60vh] flex flex-col justify-center">
+        <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Historical Data Required</p>
       </div>
+    );
+  }
 
-      {/* Projection & Target Engine */}
-      {analysis && (
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-8">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Wealth Velocity Projection</h4>
-            <span className="text-[8px] font-bold bg-indigo-50 text-indigo-500 px-3 py-1 rounded-full uppercase tracking-widest">35Y Forecast</span>
+  return (
+    <div className="space-y-8 pb-24 px-1 animate-in fade-in duration-600">
+      {/* Item Progression Tracker - Expanded Visuals */}
+      <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 min-h-[500px] flex flex-col">
+        <div className="flex flex-col space-y-6 mb-12">
+          <div className="flex justify-between items-center">
+            <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
+            <span className="text-[9px] font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase tracking-widest">Growth Engine</span>
           </div>
-          
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-3xl font-bold text-slate-900 tracking-tighter">{formatCurrency(analysis.lifetimeProjection)}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Est. Lifetime Gross Yield</p>
-            </div>
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center border border-slate-100">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-               </svg>
-            </div>
-          </div>
-
-          <div className="h-44 w-full relative min-w-0">
-             <ResponsiveContainer width="100%" height="100%" debounce={100}>
-               <AreaChart data={analysis.hourlyTrendData}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                 <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 8, fill: '#cbd5e1'}} />
-                 <YAxis hide />
-                 <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', fontSize: '10px'}} />
-                 <Area type="monotone" dataKey="hourly" stroke="#6366f1" fill="#6366f1" fillOpacity={0.05} strokeWidth={3} />
-               </AreaChart>
-             </ResponsiveContainer>
-             <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-widest mt-4">Labor Value Momentum (L12M)</p>
-          </div>
-        </div>
-      )}
-
-      {/* Strategic AI Insights */}
-      <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-50 min-h-[400px]">
-        <div className="flex items-center justify-between mb-10">
-           <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Strategic Audit (Gemini)</h4>
-           <div className="flex space-x-1.5">
-              <div className="w-2 h-2 bg-indigo-200 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-indigo-400 rounded-full animate-pulse [animation-delay:150ms]"></div>
-              <div className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse [animation-delay:300ms]"></div>
-           </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center space-y-6 py-24">
-            <div className="w-10 h-10 border-[3px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-[0.3em] animate-pulse">Analyzing Trajectory...</p>
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="text-center py-20 opacity-40">
-             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Archival History Required</p>
-          </div>
-        ) : (
-          <div className="space-y-10">
-            {insights.split('\n').filter(l => l.trim()).slice(0, 4).map((line, i) => (
-              <div key={i} className="flex space-x-6 group">
-                <div className="shrink-0 mt-2">
-                  <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full group-hover:scale-150 group-hover:bg-indigo-600 transition-all duration-300"></div>
-                </div>
-                <p className="text-slate-700 text-sm leading-[1.7] font-medium">
-                  {line.replace(/^[*-\s\d.]+\s*/, '')}
-                </p>
-              </div>
+          <select 
+            value={selectedItemName}
+            onChange={(e) => setSelectedItemName(e.target.value)}
+            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none"
+          >
+            {allItemNames.map(name => (
+              <option key={name} value={name}>{name}</option>
             ))}
+          </select>
+        </div>
+
+        {selectedItemName && (
+          <div className="flex-1 flex flex-col space-y-12">
+            <div className="h-80 w-full min-w-0">
+              <ResponsiveContainer width="100%" height="100%" debounce={100}>
+                <LineChart data={selectedItemHistory} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#94a3b8', fontWeight: 600}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#cbd5e1', fontWeight: 500}} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 'bold', padding: '12px' }}
+                    formatter={(value: number) => [formatCurrency(value), 'Recorded Value']}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#6366f1" 
+                    strokeWidth={4} 
+                    dot={{ r: 5, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }} 
+                    activeDot={{ r: 8, strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-100/80">
+                    <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Pay Period</th>
+                    <th className="p-5 text-right text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {selectedItemHistory.slice().reverse().map((h, i) => (
+                    <tr key={i} className="hover:bg-white transition-colors">
+                      <td className="p-5 text-xs font-bold text-slate-700">{h.date}</td>
+                      <td className={`p-5 text-right text-xs font-extrabold ${h.type === 'deduction' ? 'text-rose-500' : 'text-emerald-600'}`}>
+                        {formatCurrency(h.amount)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="p-8 bg-indigo-50/50 rounded-[2.2rem] border border-indigo-100 text-center">
-        <p className="text-[10px] text-indigo-500 leading-relaxed font-bold uppercase tracking-[0.15em]">
-          Strategy Focus: Maximize "Hourly Value" while maintaining a "Keep Grade" above 80% to accelerate lifetime wealth targets.
-        </p>
+      {/* AI Analysis Card - Flexible Height */}
+      <div className="bg-white rounded-[2.8rem] p-12 shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
+        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-12">Professional Audit</h4>
+        {loading ? (
+          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-[0.3em] animate-pulse">Running Career Audit...</p>
+          </div>
+        ) : (
+          <div className="space-y-10 flex-1">
+            {insights.split('\n').filter(l => l.trim()).map((line, i) => (
+              <div key={i} className="flex gap-6 group">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 shrink-0 group-hover:scale-150 transition-all duration-300"></div>
+                <p className="text-slate-700 text-[15px] leading-relaxed font-medium">{line.replace(/^[*-\s\d.]+\s*/, '')}</p>
+              </div>
+            ))}
+            {insights.length === 0 && (
+              <div className="flex-1 flex items-center justify-center opacity-30 italic text-sm">Waiting for trajectory data...</div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
