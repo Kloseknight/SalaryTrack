@@ -119,183 +119,188 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 space-y-8">
-        <div className="space-y-6">
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-3 block">Employer Entity</label>
-            <input 
-              value={form.source} 
-              onChange={e => setForm({...form, source: e.target.value})} 
-              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none" 
-              placeholder="e.g. Acme Corp"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="space-y-6">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Core Details</h4>
             <div>
-              <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1 mb-3 block">Net Take-Home</label>
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-3 block">Employer Entity</label>
               <input 
-                type="number" 
-                value={form.amount || ''} 
-                onChange={e => setForm({...form, amount: Number(e.target.value)})} 
-                className="w-full px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-sm font-bold outline-none" 
-                placeholder="0.00"
+                value={form.source} 
+                onChange={e => setForm({...form, source: e.target.value})} 
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none" 
+                placeholder="e.g. Acme Corp"
               />
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Gross Total</label>
-              <input 
-                type="number" 
-                value={form.grossAmount || ''} 
-                onChange={e => setForm({...form, grossAmount: Number(e.target.value)})} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-widest ml-1 mb-3 block">Tax Withheld</label>
-              <input 
-                type="number" 
-                value={form.tax || ''} 
-                onChange={e => setForm({...form, tax: Number(e.target.value)})} 
-                className="w-full px-6 py-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-800 text-sm font-bold outline-none" 
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Other Deductions</label>
-              <input 
-                type="number" 
-                value={form.deductions || ''} 
-                onChange={e => setForm({...form, deductions: Number(e.target.value)})} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest ml-1 mb-3 block">Company Benefits (Non-Cash)</label>
-            <input 
-              type="number" 
-              value={form.totalBenefits || ''} 
-              onChange={e => setForm({...form, totalBenefits: Number(e.target.value)})} 
-              className="w-full px-6 py-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-800 text-sm font-bold outline-none" 
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-
-        <div className="pt-6 border-t border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Itemized Ledger</h4>
-            <button 
-              type="button" 
-              onClick={addManualLineItem} 
-              className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
-            >
-              + Add Entry
-            </button>
-          </div>
-          <div className="space-y-4">
-            {form.lineItems?.map((item, idx) => (
-              <div key={idx} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between gap-4 border border-slate-100 group">
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1 mb-3 block">Net Take-Home</label>
                 <input 
-                  value={item.name} 
-                  onChange={(e) => updateLineItem(idx, 'name', e.target.value)} 
-                  className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 w-full focus:ring-0" 
+                  type="number" 
+                  value={form.amount || ''} 
+                  onChange={e => setForm({...form, amount: Number(e.target.value)})} 
+                  className="w-full px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-sm font-bold outline-none" 
+                  placeholder="0.00"
                 />
-                <div className="flex items-center gap-3 shrink-0">
-                  <input 
-                    type="number" 
-                    value={item.amount} 
-                    onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold w-20 text-right text-slate-600 outline-none" 
-                  />
-                  <button 
-                    onClick={() => removeLineItem(idx)} 
-                    className="text-slate-300 hover:text-rose-500 transition-colors text-xl font-light"
-                  >
-                    ×
-                  </button>
-                </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Gross Total</label>
+                <input 
+                  type="number" 
+                  value={form.grossAmount || ''} 
+                  onChange={e => setForm({...form, grossAmount: Number(e.target.value)})} 
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
 
-        <div className="pt-6 border-t border-slate-100">
-          <div className="flex justify-between items-center mb-6">
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Disbursements</h4>
-            <button 
-              type="button" 
-              onClick={() => setForm(prev => ({ ...prev, disbursements: [...(prev.disbursements || []), { bankName: '', bankCode: '', accountNo: '', amount: 0 }] }))} 
-              className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
-            >
-              + Add Bank
-            </button>
-          </div>
-          <div className="space-y-4">
-            {form.disbursements?.map((d, idx) => (
-              <div key={idx} className="bg-slate-50 p-4 rounded-2xl space-y-3 border border-slate-100">
-                <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    placeholder="Bank Name"
-                    value={d.bankName} 
-                    onChange={(e) => {
-                      const newD = [...(form.disbursements || [])];
-                      newD[idx] = { ...newD[idx], bankName: e.target.value };
-                      setForm({ ...form, disbursements: newD });
-                    }} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
-                  />
-                  <input 
-                    placeholder="Bank Code"
-                    value={d.bankCode} 
-                    onChange={(e) => {
-                      const newD = [...(form.disbursements || [])];
-                      newD[idx] = { ...newD[idx], bankCode: e.target.value };
-                      setForm({ ...form, disbursements: newD });
-                    }} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input 
-                    placeholder="Account No"
-                    value={d.accountNo} 
-                    onChange={(e) => {
-                      const newD = [...(form.disbursements || [])];
-                      newD[idx] = { ...newD[idx], accountNo: e.target.value };
-                      setForm({ ...form, disbursements: newD });
-                    }} 
-                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
-                  />
-                  <div className="flex gap-2">
-                    <input 
-                      type="number"
-                      placeholder="Amount"
-                      value={d.amount} 
-                      onChange={(e) => {
-                        const newD = [...(form.disbursements || [])];
-                        newD[idx] = { ...newD[idx], amount: Number(e.target.value) };
-                        setForm({ ...form, disbursements: newD });
-                      }} 
-                      className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none w-full" 
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setForm({ ...form, disbursements: form.disbursements?.filter((_, i) => i !== idx) })} 
-                      className="text-rose-500 font-bold px-2"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-[10px] font-bold text-rose-500 uppercase tracking-widest ml-1 mb-3 block">Tax Withheld</label>
+                <input 
+                  type="number" 
+                  value={form.tax || ''} 
+                  onChange={e => setForm({...form, tax: Number(e.target.value)})} 
+                  className="w-full px-6 py-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-800 text-sm font-bold outline-none" 
+                  placeholder="0.00"
+                />
               </div>
-            ))}
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1 mb-3 block">Other Deductions</label>
+                <input 
+                  type="number" 
+                  value={form.deductions || ''} 
+                  onChange={e => setForm({...form, deductions: Number(e.target.value)})} 
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest ml-1 mb-3 block">Company Benefits (Non-Cash)</label>
+              <input 
+                type="number" 
+                value={form.totalBenefits || ''} 
+                onChange={e => setForm({...form, totalBenefits: Number(e.target.value)})} 
+                className="w-full px-6 py-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-800 text-sm font-bold outline-none" 
+                placeholder="0.00"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="pt-0 border-t-0 lg:pt-0 lg:border-t-0">
+              <div className="flex justify-between items-center mb-6">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Itemized Ledger</h4>
+                <button 
+                  type="button" 
+                  onClick={addManualLineItem} 
+                  className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+                >
+                  + Add Entry
+                </button>
+              </div>
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                {form.lineItems?.map((item, idx) => (
+                  <div key={idx} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between gap-4 border border-slate-100 group">
+                    <input 
+                      value={item.name} 
+                      onChange={(e) => updateLineItem(idx, 'name', e.target.value)} 
+                      className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 w-full focus:ring-0" 
+                    />
+                    <div className="flex items-center gap-3 shrink-0">
+                      <input 
+                        type="number" 
+                        value={item.amount} 
+                        onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))} 
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold w-20 text-right text-slate-600 outline-none" 
+                      />
+                      <button 
+                        onClick={() => removeLineItem(idx)} 
+                        className="text-slate-300 hover:text-rose-500 transition-colors text-xl font-light"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex justify-between items-center mb-6">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Disbursements</h4>
+                <button 
+                  type="button" 
+                  onClick={() => setForm(prev => ({ ...prev, disbursements: [...(prev.disbursements || []), { bankName: '', bankCode: '', accountNo: '', amount: 0 }] }))} 
+                  className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+                >
+                  + Add Bank
+                </button>
+              </div>
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                {form.disbursements?.map((d, idx) => (
+                  <div key={idx} className="bg-slate-50 p-4 rounded-2xl space-y-3 border border-slate-100">
+                    <div className="grid grid-cols-2 gap-2">
+                      <input 
+                        placeholder="Bank Name"
+                        value={d.bankName} 
+                        onChange={(e) => {
+                          const newD = [...(form.disbursements || [])];
+                          newD[idx] = { ...newD[idx], bankName: e.target.value };
+                          setForm({ ...form, disbursements: newD });
+                        }} 
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                      />
+                      <input 
+                        placeholder="Bank Code"
+                        value={d.bankCode} 
+                        onChange={(e) => {
+                          const newD = [...(form.disbursements || [])];
+                          newD[idx] = { ...newD[idx], bankCode: e.target.value };
+                          setForm({ ...form, disbursements: newD });
+                        }} 
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input 
+                        placeholder="Account No"
+                        value={d.accountNo} 
+                        onChange={(e) => {
+                          const newD = [...(form.disbursements || [])];
+                          newD[idx] = { ...newD[idx], accountNo: e.target.value };
+                          setForm({ ...form, disbursements: newD });
+                        }} 
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                      />
+                      <div className="flex gap-2">
+                        <input 
+                          type="number"
+                          placeholder="Amount"
+                          value={d.amount} 
+                          onChange={(e) => {
+                            const newD = [...(form.disbursements || [])];
+                            newD[idx] = { ...newD[idx], amount: Number(e.target.value) };
+                            setForm({ ...form, disbursements: newD });
+                          }} 
+                          className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none w-full" 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setForm({ ...form, disbursements: form.disbursements?.filter((_, i) => i !== idx) })} 
+                          className="text-rose-500 font-bold px-2"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 

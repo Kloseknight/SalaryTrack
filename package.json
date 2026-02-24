@@ -7,6 +7,7 @@
   "description": "Lifetime salary and career progression tracker for iOS.",
   "scripts": {
     "dev": "vite",
+    "lint": "tsc --noEmit",
     "build": "vite build",
     "preview": "vite preview"
   },

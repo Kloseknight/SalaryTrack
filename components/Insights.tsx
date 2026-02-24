@@ -8,11 +8,9 @@ interface InsightsProps {
   entries: FinancialEntry[];
 }
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+const COLORS = ['#10b981', '#ef4444', '#f59e0b', '#6366f1', '#8b5cf6', '#ec4899'];
 
 const Insights: React.FC<InsightsProps> = ({ entries }) => {
-  const [insights, setInsights] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState<string>('');
   const [timeframe, setTimeframe] = useState<'1Y' | 'YTD' | 'ALL' | string>('1Y');
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -26,21 +24,24 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
     return Array.from(years).sort((a, b) => b.localeCompare(a));
   }, [entries]);
 
-  useEffect(() => {
-    const fetchInsights = async () => {
-      if (entries.length === 0) return;
-      setLoading(true);
-      try {
-        const text = await geminiService.getFinancialInsights(entries);
-        setInsights(text);
-      } catch (err) {
-        setInsights("Career analysis currently unavailable.");
-      } finally {
-        setLoading(false);
+  const filteredEntries = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    return [...entries].filter(e => {
+      const date = new Date(e.date);
+      const year = date.getFullYear();
+      if (timeframe === '1Y') {
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(now.getMonth() - 12);
+        return date >= twelveMonthsAgo;
+      } else if (timeframe === 'YTD') {
+        return year === currentYear;
+      } else if (timeframe !== 'ALL') {
+        return year.toString() === timeframe;
       }
-    };
-    fetchInsights();
-  }, [entries]);
+      return true;
+    });
+  }, [entries, timeframe]);
 
   const rawCurrency = entries[0]?.currency || 'USD';
   const currency = useMemo(() => {
@@ -76,27 +77,45 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
     }
   }, [allItemNames]);
 
+  const compositionData = useMemo(() => {
+    const totals = filteredEntries.reduce((acc, e) => ({
+      net: acc.net + e.amount,
+      tax: acc.tax + (e.tax || 0),
+      deductions: acc.deductions + (e.deductions || 0)
+    }), { net: 0, tax: 0, deductions: 0 });
+
+    return [
+      { name: 'Net Take-Home', value: totals.net },
+      { name: 'Tax Withheld', value: totals.tax },
+      { name: 'Other Deductions', value: totals.deductions }
+    ].filter(d => d.value > 0);
+  }, [filteredEntries]);
+
+  const yearlySummary = useMemo(() => {
+    const years: Record<string, { gross: number, net: number }> = {};
+    entries.forEach(e => {
+      const y = new Date(e.date).getFullYear().toString();
+      if (!years[y]) years[y] = { gross: 0, net: 0 };
+      years[y].gross += e.grossAmount || 0;
+      years[y].net += e.amount;
+    });
+
+    const sortedYears = Object.keys(years).sort().map(y => ({
+      year: y,
+      ...years[y]
+    }));
+
+    return sortedYears.map((curr, idx) => {
+      const prev = sortedYears[idx - 1];
+      const growth = prev ? ((curr.gross - prev.gross) / prev.gross) * 100 : 0;
+      return { ...curr, growth };
+    });
+  }, [entries]);
+
   const selectedItemHistory = useMemo(() => {
     if (!selectedItemName) return [];
-    const now = new Date();
-    const currentYear = now.getFullYear();
-
-    return [...entries]
+    return filteredEntries
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .filter(e => {
-        const date = new Date(e.date);
-        const year = date.getFullYear();
-        if (timeframe === '1Y') {
-          const twelveMonthsAgo = new Date();
-          twelveMonthsAgo.setMonth(now.getMonth() - 12);
-          return date >= twelveMonthsAgo;
-        } else if (timeframe === 'YTD') {
-          return year === currentYear;
-        } else if (timeframe !== 'ALL') {
-          return year.toString() === timeframe;
-        }
-        return true;
-      })
       .map(e => {
         const item = e.lineItems?.find(li => li.name === selectedItemName);
         return {
@@ -105,7 +124,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
           type: item?.type || 'earning'
         };
       });
-  }, [selectedItemName, entries, timeframe]);
+  }, [selectedItemName, filteredEntries]);
 
   const disbursementStats = useMemo(() => {
     const stats: Record<string, { bankName: string, bankCode: string, accountNo: string, total: number }> = {};
@@ -126,59 +145,51 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
     return showAllHistory ? reversed : reversed.slice(0, 5);
   }, [selectedItemHistory, showAllHistory]);
 
-  if (entries.length === 0) {
-    return (
-      <div className="py-32 text-center opacity-40 min-h-[60vh] flex flex-col justify-center">
-        <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Historical Data Required</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8 pb-24 px-1 animate-in fade-in duration-600">
       {/* Item Progression Tracker - Expanded Visuals */}
       <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 min-h-[500px] flex flex-col">
-        <div className="flex flex-col space-y-6 mb-12">
-          <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+          <div className="flex flex-col space-y-2">
             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
-            <div className="flex items-center space-x-2">
-              <select 
-                value={availableYears.includes(timeframe) ? timeframe : ''} 
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
-              >
-                <option value="" disabled>Year</option>
-                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-              <div className="flex bg-slate-50 p-1 rounded-xl">
-                {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => setTimeframe(tf)}
-                    className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
-                      timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
+            <select 
+              value={selectedItemName}
+              onChange={(e) => setSelectedItemName(e.target.value)}
+              className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none min-w-[250px]"
+            >
+              {allItemNames.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center space-x-2 self-end md:self-auto">
+            <select 
+              value={availableYears.includes(timeframe) ? timeframe : ''} 
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
+            >
+              <option value="" disabled>Year</option>
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <div className="flex bg-slate-50 p-1 rounded-xl">
+              {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                    timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
             </div>
           </div>
-          <select 
-            value={selectedItemName}
-            onChange={(e) => setSelectedItemName(e.target.value)}
-            className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none"
-          >
-            {allItemNames.map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
         </div>
 
         {selectedItemName && (
-          <div className="flex-1 flex flex-col space-y-12">
-            <div className="h-80 w-full min-w-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div className="lg:col-span-2 h-80 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%" debounce={100}>
                 <LineChart data={selectedItemHistory} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -186,7 +197,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                   <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#cbd5e1', fontWeight: 500}} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 15px 35px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 'bold', padding: '12px' }}
-                    formatter={(value: number) => [formatCurrency(value), 'Recorded Value']}
+                    formatter={(value: number | undefined) => [formatCurrency(value || 0), 'Recorded Value']}
                   />
                   <Line 
                     type="monotone" 
@@ -200,7 +211,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+            <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner h-fit">
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-slate-100/80">
@@ -230,6 +241,76 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
             </div>
           </div>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Earnings Composition Analysis */}
+        <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 flex flex-col">
+          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Earnings Composition</h4>
+          <div className="flex-1 flex flex-col justify-center">
+            <div className="h-64 w-full mb-8">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={compositionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {compositionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number | undefined) => formatCurrency(value || 0)}
+                    contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {compositionData.map((item, i) => (
+                <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                    <span className="text-xs font-bold text-slate-600">{item.name}</span>
+                  </div>
+                  <span className="text-xs font-extrabold text-slate-800">{formatCurrency(item.value)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Yearly Growth Summary */}
+        <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100">
+          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Yearly Trajectory</h4>
+          <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-100/80">
+                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Year</th>
+                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Gross Total</th>
+                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Growth</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {yearlySummary.slice().reverse().map((y, i) => (
+                  <tr key={i} className="hover:bg-white transition-colors">
+                    <td className="p-5 text-xs font-bold text-slate-700">{y.year}</td>
+                    <td className="p-5 text-right text-xs font-extrabold text-slate-800">{formatCurrency(y.gross)}</td>
+                    <td className={`p-5 text-right text-xs font-extrabold ${y.growth >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                      {y.growth > 0 ? '+' : ''}{y.growth.toFixed(1)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Disbursement Analysis Card */}
@@ -265,28 +346,6 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         </div>
       </div>
 
-      {/* AI Analysis Card - Flexible Height */}
-      <div className="bg-white rounded-[2.8rem] p-12 shadow-sm border border-slate-100 min-h-[400px] flex flex-col">
-        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-12">Professional Audit</h4>
-        {loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center space-y-6">
-            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-[0.3em] animate-pulse">Running Career Audit...</p>
-          </div>
-        ) : (
-          <div className="space-y-10 flex-1">
-            {insights.split('\n').filter(l => l.trim()).map((line, i) => (
-              <div key={i} className="flex gap-6 group">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 shrink-0 group-hover:scale-150 transition-all duration-300"></div>
-                <p className="text-slate-700 text-[15px] leading-relaxed font-medium">{line.replace(/^[*-\s\d.]+\s*/, '')}</p>
-              </div>
-            ))}
-            {insights.length === 0 && (
-              <div className="flex-1 flex items-center justify-center opacity-30 italic text-sm">Waiting for trajectory data...</div>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   );
 };
