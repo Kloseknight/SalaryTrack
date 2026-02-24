@@ -20,7 +20,7 @@ git push -u origin main
 
 ### 2. Vercel Hosting
 - Link your GitHub repository to [Vercel](https://vercel.com).
-- **Environment Variables**: Add `API_KEY` in the project settings. This key must be a valid Google Gemini API Key.
+- **Environment Variables**: Add `GEMINI_API_KEY` in the project settings. This key must be a valid Google Gemini API Key.
 - Deploy.
 
 ### 3. iOS "Native" Installation

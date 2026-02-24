@@ -14,6 +14,8 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
   const [insights, setInsights] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState<string>('');
+  const [timeframe, setTimeframe] = useState<'1Y' | 'YTD' | 'ALL'>('1Y');
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -67,8 +69,22 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
 
   const selectedItemHistory = useMemo(() => {
     if (!selectedItemName) return [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
     return [...entries]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .filter(e => {
+        const date = new Date(e.date);
+        if (timeframe === '1Y') {
+          const twelveMonthsAgo = new Date();
+          twelveMonthsAgo.setMonth(now.getMonth() - 12);
+          return date >= twelveMonthsAgo;
+        } else if (timeframe === 'YTD') {
+          return date.getFullYear() === currentYear;
+        }
+        return true;
+      })
       .map(e => {
         const item = e.lineItems?.find(li => li.name === selectedItemName);
         return {
@@ -77,7 +93,12 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
           type: item?.type || 'earning'
         };
       });
-  }, [selectedItemName, entries]);
+  }, [selectedItemName, entries, timeframe]);
+
+  const displayedHistory = useMemo(() => {
+    const reversed = [...selectedItemHistory].reverse();
+    return showAllHistory ? reversed : reversed.slice(0, 5);
+  }, [selectedItemHistory, showAllHistory]);
 
   if (entries.length === 0) {
     return (
@@ -94,7 +115,19 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex justify-between items-center">
             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
-            <span className="text-[9px] font-bold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full uppercase tracking-widest">Growth Engine</span>
+            <div className="flex bg-slate-50 p-1 rounded-xl">
+              {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                    timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
           <select 
             value={selectedItemName}
@@ -140,7 +173,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {selectedItemHistory.slice().reverse().map((h, i) => (
+                  {displayedHistory.map((h, i) => (
                     <tr key={i} className="hover:bg-white transition-colors">
                       <td className="p-5 text-xs font-bold text-slate-700">{h.date}</td>
                       <td className={`p-5 text-right text-xs font-extrabold ${h.type === 'deduction' ? 'text-rose-500' : 'text-emerald-600'}`}>
@@ -150,6 +183,14 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                   ))}
                 </tbody>
               </table>
+              {selectedItemHistory.length > 5 && (
+                <button 
+                  onClick={() => setShowAllHistory(!showAllHistory)}
+                  className="w-full py-4 bg-slate-100/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:bg-slate-100 transition-colors"
+                >
+                  {showAllHistory ? 'Show Less' : `Show All (${selectedItemHistory.length})`}
+                </button>
+              )}
             </div>
           </div>
         )}

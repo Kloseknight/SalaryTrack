@@ -12,6 +12,8 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [timeframe, setTimeframe] = useState<'1Y' | 'ALL' | 'YTD'>('1Y');
+  
   const rawCurrency = entries[0]?.currency || 'USD';
   const currency = useMemo(() => {
     if (typeof rawCurrency !== 'string' || rawCurrency.length !== 3) return 'USD';
@@ -33,14 +35,39 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
   };
 
   const chartData = useMemo(() => {
-    const months: Record<string, { month: string, gross: number, net: number }> = {};
+    const months: Record<string, { month: string, gross: number, net: number, timestamp: number }> = {};
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
     [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).forEach(e => {
-      const m = new Date(e.date).toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      if (!months[m]) months[m] = { month: m, gross: 0, net: 0 };
+      const date = new Date(e.date);
+      const m = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      const year = date.getFullYear();
+      
+      // Filter based on timeframe
+      if (timeframe === '1Y') {
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(now.getMonth() - 12);
+        if (date < twelveMonthsAgo) return;
+      } else if (timeframe === 'YTD') {
+        if (year !== currentYear) return;
+      }
+
+      if (!months[m]) months[m] = { month: m, gross: 0, net: 0, timestamp: date.getTime() };
       months[m].gross += e.grossAmount || 0;
       months[m].net += e.amount;
     });
-    return Object.values(months).slice(-12);
+
+    let result = Object.values(months).sort((a, b) => a.timestamp - b.timestamp);
+    
+    // If ALL and too many points, we might want to aggregate further, 
+    // but for now let's just show them. 
+    // If it's from 2021, that's ~4 years = 48 points. Still manageable in a bar chart.
+    return result;
+  }, [entries, timeframe]);
+
+  const recentEntries = useMemo(() => {
+    return [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
   }, [entries]);
 
   const stats = useMemo(() => {
@@ -98,7 +125,22 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
 
       {/* Main Chart Card */}
       <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mx-1">
-        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-10 px-2">Earnings Velocity</h3>
+        <div className="flex justify-between items-center mb-10 px-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Earnings Velocity</h3>
+          <div className="flex bg-slate-50 p-1 rounded-xl">
+            {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                  timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="h-72 w-full min-w-0">
           <ResponsiveContainer width="100%" height="100%" debounce={100}>
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -113,6 +155,34 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
               <Bar dataKey="net" fill="#10b981" radius={[8, 8, 0, 0]} barSize={16} />
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      </div>
+      
+      {/* Recent Activity Table - Limited to 5 items to address growth concerns */}
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mx-1">
+        <div className="flex justify-between items-center mb-6 px-2">
+          <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Recent Activity</h3>
+          <button onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'history' }))} className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">View All</button>
+        </div>
+        <div className="space-y-4">
+          {recentEntries.map((entry) => (
+            <div key={entry.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-slate-50 flex flex-col items-center justify-center text-slate-500">
+                  <span className="text-[8px] font-bold uppercase">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                  <span className="text-xs font-bold">{new Date(entry.date).toLocaleDateString('en-US', { day: 'numeric' })}</span>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-800 truncate max-w-[120px]">{entry.source}</p>
+                  <p className="text-[9px] text-slate-400 font-medium">{entry.jobTitle || 'Salary'}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-bold text-emerald-600">+{formatCurrency(entry.amount, true)}</p>
+                <p className="text-[8px] text-slate-300 font-bold uppercase">Net</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       

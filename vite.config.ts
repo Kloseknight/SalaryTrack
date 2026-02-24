@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     // Bridges Vercel/System environment variables to the browser code
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY)
   },
   build: {
     outDir: 'dist',

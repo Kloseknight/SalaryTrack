@@ -49,8 +49,9 @@ const History: React.FC<HistoryProps> = ({ entries, onDelete }) => {
             >
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 rounded-2xl flex flex-col items-center justify-center bg-indigo-50 text-indigo-600 font-bold leading-none">
-                  <span className="text-[10px] uppercase">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                  <span className="text-lg">{new Date(entry.date).toLocaleDateString('en-US', { day: 'numeric' })}</span>
+                  <span className="text-[8px] uppercase opacity-70">{new Date(entry.date).toLocaleDateString('en-US', { year: 'numeric' })}</span>
+                  <span className="text-[9px] uppercase">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                  <span className="text-base">{new Date(entry.date).toLocaleDateString('en-US', { day: 'numeric' })}</span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-slate-900">{entry.source}</p>

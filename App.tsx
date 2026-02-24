@@ -18,6 +18,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     refreshData();
+    
+    const handleViewChange = (e: any) => {
+      if (e.detail) setActiveView(e.detail);
+    };
+    
+    window.addEventListener('changeView', handleViewChange);
+    return () => window.removeEventListener('changeView', handleViewChange);
   }, []);
 
   const handleAddEntry = (entry: FinancialEntry) => {
