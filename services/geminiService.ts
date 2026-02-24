@@ -46,6 +46,7 @@ export const geminiService = {
             amount: { type: Type.NUMBER },
             tax: { type: Type.NUMBER },
             deductions: { type: Type.NUMBER },
+            totalBenefits: { type: Type.NUMBER },
             lineItems: {
               type: Type.ARRAY,
               items: {
@@ -55,6 +56,18 @@ export const geminiService = {
                   amount: { type: Type.NUMBER },
                   ytd: { type: Type.NUMBER },
                   type: { type: Type.STRING }
+                }
+              }
+            },
+            disbursements: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  bankName: { type: Type.STRING },
+                  bankCode: { type: Type.STRING },
+                  accountNo: { type: Type.STRING },
+                  amount: { type: Type.NUMBER }
                 }
               }
             }

@@ -17,11 +17,13 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
     grossAmount: 0,
     tax: 0,
     deductions: 0,
+    totalBenefits: 0,
     date: new Date().toISOString().split('T')[0],
     currency: 'USD',
     jobTitle: '',
     department: '',
-    lineItems: []
+    lineItems: [],
+    disbursements: []
   });
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,10 +80,12 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
       grossAmount: Number(form.grossAmount || 0),
       tax: Number(form.tax || 0),
       deductions: Number(form.deductions || 0),
+      totalBenefits: Number(form.totalBenefits || 0),
       currency: form.currency || 'USD',
       jobTitle: form.jobTitle,
       department: form.department,
-      lineItems: form.lineItems || []
+      lineItems: form.lineItems || [],
+      disbursements: form.disbursements || []
     };
 
     onEntryAdded(newEntry);
@@ -171,6 +175,17 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
               />
             </div>
           </div>
+
+          <div>
+            <label className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest ml-1 mb-3 block">Company Benefits (Non-Cash)</label>
+            <input 
+              type="number" 
+              value={form.totalBenefits || ''} 
+              onChange={e => setForm({...form, totalBenefits: Number(e.target.value)})} 
+              className="w-full px-6 py-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-800 text-sm font-bold outline-none" 
+              placeholder="0.00"
+            />
+          </div>
         </div>
 
         <div className="pt-6 border-t border-slate-100">
@@ -205,6 +220,79 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                   >
                     ×
                   </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-slate-100">
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Disbursements</h4>
+            <button 
+              type="button" 
+              onClick={() => setForm(prev => ({ ...prev, disbursements: [...(prev.disbursements || []), { bankName: '', bankCode: '', accountNo: '', amount: 0 }] }))} 
+              className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+            >
+              + Add Bank
+            </button>
+          </div>
+          <div className="space-y-4">
+            {form.disbursements?.map((d, idx) => (
+              <div key={idx} className="bg-slate-50 p-4 rounded-2xl space-y-3 border border-slate-100">
+                <div className="grid grid-cols-2 gap-2">
+                  <input 
+                    placeholder="Bank Name"
+                    value={d.bankName} 
+                    onChange={(e) => {
+                      const newD = [...(form.disbursements || [])];
+                      newD[idx] = { ...newD[idx], bankName: e.target.value };
+                      setForm({ ...form, disbursements: newD });
+                    }} 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                  />
+                  <input 
+                    placeholder="Bank Code"
+                    value={d.bankCode} 
+                    onChange={(e) => {
+                      const newD = [...(form.disbursements || [])];
+                      newD[idx] = { ...newD[idx], bankCode: e.target.value };
+                      setForm({ ...form, disbursements: newD });
+                    }} 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input 
+                    placeholder="Account No"
+                    value={d.accountNo} 
+                    onChange={(e) => {
+                      const newD = [...(form.disbursements || [])];
+                      newD[idx] = { ...newD[idx], accountNo: e.target.value };
+                      setForm({ ...form, disbursements: newD });
+                    }} 
+                    className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none" 
+                  />
+                  <div className="flex gap-2">
+                    <input 
+                      type="number"
+                      placeholder="Amount"
+                      value={d.amount} 
+                      onChange={(e) => {
+                        const newD = [...(form.disbursements || [])];
+                        newD[idx] = { ...newD[idx], amount: Number(e.target.value) };
+                        setForm({ ...form, disbursements: newD });
+                      }} 
+                      className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none w-full" 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setForm({ ...form, disbursements: form.disbursements?.filter((_, i) => i !== idx) })} 
+                      className="text-rose-500 font-bold px-2"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

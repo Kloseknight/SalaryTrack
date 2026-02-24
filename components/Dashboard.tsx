@@ -12,8 +12,17 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [timeframe, setTimeframe] = useState<'1Y' | 'ALL' | 'YTD'>('1Y');
+  const [timeframe, setTimeframe] = useState<'1Y' | 'ALL' | 'YTD' | string>('1Y');
   
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    entries.forEach(e => {
+      const year = new Date(e.date).getFullYear().toString();
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [entries]);
+
   const rawCurrency = entries[0]?.currency || 'USD';
   const currency = useMemo(() => {
     if (typeof rawCurrency !== 'string' || rawCurrency.length !== 3) return 'USD';
@@ -51,6 +60,9 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         if (date < twelveMonthsAgo) return;
       } else if (timeframe === 'YTD') {
         if (year !== currentYear) return;
+      } else if (timeframe !== 'ALL') {
+        // Specific year selected
+        if (year.toString() !== timeframe) return;
       }
 
       if (!months[m]) months[m] = { month: m, gross: 0, net: 0, timestamp: date.getTime() };
@@ -74,7 +86,8 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
     const totalNet = entries.reduce((acc, e) => acc + e.amount, 0);
     const totalGross = entries.reduce((acc, e) => acc + (e.grossAmount || 0), 0);
     const totalDeductions = entries.reduce((acc, e) => acc + (e.deductions || 0) + (e.tax || 0), 0);
-    return { totalNet, totalGross, totalDeductions };
+    const totalBenefits = entries.reduce((acc, e) => acc + (e.totalBenefits || 0), 0);
+    return { totalNet, totalGross, totalDeductions, totalBenefits };
   }, [entries]);
 
   if (entries.length === 0) {
@@ -108,12 +121,25 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
           
           <div className="grid grid-cols-2 gap-8 pt-10 border-t border-white/10">
             <div>
-              <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Net Flow</p>
+              <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Net Take-Home</p>
               <p className="text-2xl font-bold tracking-tight">{formatCurrency(stats.totalNet)}</p>
+              <p className="text-[8px] text-white/40 mt-1 italic">Total cash received</p>
             </div>
             <div>
-              <p className="text-rose-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Total Leakage</p>
+              <p className="text-rose-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Taxes & Deductions</p>
               <p className="text-2xl font-bold tracking-tight">{formatCurrency(stats.totalDeductions)}</p>
+              <p className="text-[8px] text-white/40 mt-1 italic">Total leakage from gross</p>
+            </div>
+          </div>
+          
+          <div className="mt-8 pt-6 border-t border-white/5 flex justify-between items-center">
+            <div>
+              <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-1">Company Benefits</p>
+              <p className="text-lg font-bold">{formatCurrency(stats.totalBenefits)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-white/30 text-[8px] font-bold uppercase tracking-widest">Profile Status</p>
+              <p className="text-[10px] font-bold text-emerald-400 uppercase">Verified</p>
             </div>
           </div>
         </div>
@@ -127,18 +153,28 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
       <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mx-1">
         <div className="flex justify-between items-center mb-10 px-2">
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Earnings Velocity</h3>
-          <div className="flex bg-slate-50 p-1 rounded-xl">
-            {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
-                  timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
+          <div className="flex items-center space-x-2">
+            <select 
+              value={availableYears.includes(timeframe) ? timeframe : ''} 
+              onChange={(e) => setTimeframe(e.target.value)}
+              className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
+            >
+              <option value="" disabled>Year</option>
+              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+            <div className="flex bg-slate-50 p-1 rounded-xl">
+              {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+                <button
+                  key={tf}
+                  onClick={() => setTimeframe(tf)}
+                  className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                    timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  {tf}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         <div className="h-72 w-full min-w-0">

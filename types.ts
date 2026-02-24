@@ -34,6 +34,7 @@ export interface FinancialEntry {
   jobTitle?: string;
   department?: string;
   workedHours?: number;
+  totalBenefits?: number;
   taxCode?: string;
   ytdGross?: number;
   ytdNet?: number;

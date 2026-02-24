@@ -90,8 +90,8 @@ const History: React.FC<HistoryProps> = ({ entries, onDelete }) => {
                     <p className="text-[10px] font-bold text-rose-600">-{formatCurrency((entry.tax || 0) + (entry.deductions || 0), entry.currency)}</p>
                   </div>
                    <div className="bg-white p-3 rounded-xl border border-slate-100">
-                    <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Hours</p>
-                    <p className="text-[10px] font-bold text-indigo-600">{entry.workedHours || '0.00'}</p>
+                    <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Benefits</p>
+                    <p className="text-[10px] font-bold text-indigo-600">{formatCurrency(entry.totalBenefits || 0, entry.currency)}</p>
                   </div>
                 </div>
 
@@ -107,8 +107,8 @@ const History: React.FC<HistoryProps> = ({ entries, onDelete }) => {
                             <p className="text-[8px] text-slate-400 uppercase tracking-wider">{li.type}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`font-bold ${li.type === 'earning' ? 'text-emerald-600' : 'text-rose-500'}`}>
-                              {li.type === 'earning' ? '+' : '-'}{formatCurrency(li.amount, entry.currency)}
+                            <p className={`font-bold ${li.type === 'earning' ? 'text-emerald-600' : li.type === 'benefit' ? 'text-indigo-600' : 'text-rose-500'}`}>
+                              {li.type === 'earning' ? '+' : li.type === 'benefit' ? '+' : '-'}{formatCurrency(Math.abs(li.amount), entry.currency)}
                             </p>
                             {li.ytd && <p className="text-[8px] text-slate-300">YTD: {formatCurrency(li.ytd, entry.currency)}</p>}
                           </div>

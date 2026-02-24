@@ -14,8 +14,17 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
   const [insights, setInsights] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState<string>('');
-  const [timeframe, setTimeframe] = useState<'1Y' | 'YTD' | 'ALL'>('1Y');
+  const [timeframe, setTimeframe] = useState<'1Y' | 'YTD' | 'ALL' | string>('1Y');
   const [showAllHistory, setShowAllHistory] = useState(false);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<string>();
+    entries.forEach(e => {
+      const year = new Date(e.date).getFullYear().toString();
+      years.add(year);
+    });
+    return Array.from(years).sort((a, b) => b.localeCompare(a));
+  }, [entries]);
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -76,12 +85,15 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .filter(e => {
         const date = new Date(e.date);
+        const year = date.getFullYear();
         if (timeframe === '1Y') {
           const twelveMonthsAgo = new Date();
           twelveMonthsAgo.setMonth(now.getMonth() - 12);
           return date >= twelveMonthsAgo;
         } else if (timeframe === 'YTD') {
-          return date.getFullYear() === currentYear;
+          return year === currentYear;
+        } else if (timeframe !== 'ALL') {
+          return year.toString() === timeframe;
         }
         return true;
       })
@@ -94,6 +106,20 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         };
       });
   }, [selectedItemName, entries, timeframe]);
+
+  const disbursementStats = useMemo(() => {
+    const stats: Record<string, { bankName: string, bankCode: string, accountNo: string, total: number }> = {};
+    entries.forEach(e => {
+      e.disbursements?.forEach(d => {
+        const key = `${d.bankCode}-${d.accountNo}`;
+        if (!stats[key]) {
+          stats[key] = { bankName: d.bankName, bankCode: d.bankCode, accountNo: d.accountNo, total: 0 };
+        }
+        stats[key].total += d.amount;
+      });
+    });
+    return Object.values(stats).sort((a, b) => b.total - a.total);
+  }, [entries]);
 
   const displayedHistory = useMemo(() => {
     const reversed = [...selectedItemHistory].reverse();
@@ -115,18 +141,28 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         <div className="flex flex-col space-y-6 mb-12">
           <div className="flex justify-between items-center">
             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
-            <div className="flex bg-slate-50 p-1 rounded-xl">
-              {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setTimeframe(tf)}
-                  className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
-                    timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
+            <div className="flex items-center space-x-2">
+              <select 
+                value={availableYears.includes(timeframe) ? timeframe : ''} 
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
+              >
+                <option value="" disabled>Year</option>
+                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <div className="flex bg-slate-50 p-1 rounded-xl">
+                {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                      timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <select 
@@ -194,6 +230,39 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Disbursement Analysis Card */}
+      <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100">
+        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Disbursement Channels</h4>
+        <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-100/80">
+                <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Bank / Account</th>
+                <th className="p-5 text-right text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Lifetime Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {disbursementStats.map((d, i) => (
+                <tr key={i} className="hover:bg-white transition-colors">
+                  <td className="p-5">
+                    <p className="text-xs font-bold text-slate-700">{d.bankName}</p>
+                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">{d.bankCode} • {d.accountNo}</p>
+                  </td>
+                  <td className="p-5 text-right text-xs font-extrabold text-indigo-600">
+                    {formatCurrency(d.total)}
+                  </td>
+                </tr>
+              ))}
+              {disbursementStats.length === 0 && (
+                <tr>
+                  <td colSpan={2} className="p-10 text-center text-xs text-slate-400 italic">No disbursement data found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* AI Analysis Card - Flexible Height */}
