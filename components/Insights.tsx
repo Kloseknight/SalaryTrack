@@ -126,6 +126,10 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
       });
   }, [selectedItemName, filteredEntries]);
 
+  const selectedItemTotal = useMemo(() => {
+    return selectedItemHistory.reduce((acc, curr) => acc + curr.amount, 0);
+  }, [selectedItemHistory]);
+
   const disbursementStats = useMemo(() => {
     const stats: Record<string, { bankName: string, bankCode: string, accountNo: string, total: number }> = {};
     entries.forEach(e => {
@@ -152,37 +156,49 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
           <div className="flex flex-col space-y-2">
             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
-            <select 
-              value={selectedItemName}
-              onChange={(e) => setSelectedItemName(e.target.value)}
-              className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none min-w-[250px]"
-            >
-              {allItemNames.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+            <div className="flex items-baseline space-x-4">
+              <select 
+                value={selectedItemName}
+                onChange={(e) => setSelectedItemName(e.target.value)}
+                className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none min-w-[250px]"
+              >
+                {allItemNames.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+              <div className="hidden sm:block">
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Period Total</p>
+                <p className="text-xl font-black text-indigo-600 tracking-tight">{formatCurrency(selectedItemTotal)}</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-2 self-end md:self-auto">
-            <select 
-              value={availableYears.includes(timeframe) ? timeframe : ''} 
-              onChange={(e) => setTimeframe(e.target.value)}
-              className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
-            >
-              <option value="" disabled>Year</option>
-              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-            <div className="flex bg-slate-50 p-1 rounded-xl">
-              {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
-                <button
-                  key={tf}
-                  onClick={() => setTimeframe(tf)}
-                  className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
-                    timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
-                  }`}
-                >
-                  {tf}
-                </button>
-              ))}
+          <div className="flex flex-col items-end space-y-4">
+            <div className="flex items-center space-x-2 self-end md:self-auto">
+              <select 
+                value={availableYears.includes(timeframe) ? timeframe : ''} 
+                onChange={(e) => setTimeframe(e.target.value)}
+                className="bg-slate-50 border-none text-[9px] font-bold text-slate-500 rounded-lg px-2 py-1 outline-none"
+              >
+                <option value="" disabled>Year</option>
+                {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              <div className="flex bg-slate-50 p-1 rounded-xl">
+                {(['1Y', 'YTD', 'ALL'] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    className={`px-3 py-1 text-[9px] font-bold rounded-lg transition-all ${
+                      timeframe === tf ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="sm:hidden text-right">
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Period Total</p>
+              <p className="text-lg font-black text-indigo-600 tracking-tight">{formatCurrency(selectedItemTotal)}</p>
             </div>
           </div>
         </div>
