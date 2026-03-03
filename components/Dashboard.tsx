@@ -251,6 +251,27 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         <button onClick={() => storageService.exportData()} className="flex-1 py-5 bg-slate-900 text-white rounded-3xl text-[11px] font-bold uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-slate-200 hover:bg-slate-800">Export Portfolio Data</button>
         <button onClick={() => fileInputRef.current?.click()} className="flex-1 py-5 bg-white text-slate-500 rounded-3xl text-[11px] font-bold uppercase tracking-widest border border-slate-100 active:scale-95 transition-all hover:bg-slate-50">Import Backup Archive</button>
       </div>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (ev) => { 
+              if (storageService.importData(ev.target?.result as string)) {
+                onDataRefresh();
+                alert("Backup imported successfully!");
+              } else {
+                alert("Invalid backup file format.");
+              }
+            };
+            reader.readAsText(file);
+          }
+        }} 
+        className="hidden" 
+        accept=".json" 
+      />
     </div>
   );
 };
