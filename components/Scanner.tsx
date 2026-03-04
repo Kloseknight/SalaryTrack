@@ -33,10 +33,18 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   }, []);
 
   const handleConnectKey = async () => {
+    console.log("Attempting to connect key. window.aistudio:", window.aistudio);
     if (window.aistudio?.openSelectKey) {
-      await window.aistudio.openSelectKey();
-      // After opening the dialog, we assume success or the user will try again
-      setHasUserKey(true);
+      try {
+        await window.aistudio.openSelectKey();
+        // Assume success per platform guidelines to avoid race conditions
+        setHasUserKey(true);
+      } catch (err) {
+        console.error("Failed to open key selector:", err);
+        alert("Could not open the key selector. Please try refreshing the page.");
+      }
+    } else {
+      alert("The 'Connect Key' feature is only available when viewing this app inside the AI Studio preview. If you are here, please try refreshing.");
     }
   };
 
@@ -157,10 +165,10 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
               <li>Visit <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-indigo-600 underline">Google AI Studio</a>.</li>
               <li>Sign in with your Google Account.</li>
               <li>Click the <strong>"Get API key"</strong> button in the sidebar.</li>
-              <li>Click <strong>"Create API key"</strong> (choose a project or create a new one).</li>
+              <li>Click <strong>"Create API key"</strong>.</li>
               <li>Copy the key and click <strong>"Connect Your Own Key"</strong> above to paste it.</li>
             </ol>
-            <p className="text-[9px] text-slate-400 italic">Note: The free tier allows up to 15 requests per minute, which is plenty for personal use!</p>
+            <p className="text-[9px] text-slate-400 italic">Note: We now use the standard Gemini 2.5 model, so a basic free key works perfectly without needing a billing account!</p>
           </div>
         )}
       </div>

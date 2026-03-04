@@ -32,7 +32,7 @@ export const geminiService = {
     while (attempts < maxAttempts) {
       try {
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: "gemini-2.5-flash",
           contents: {
             parts: [
               {
@@ -118,37 +118,6 @@ export const geminiService = {
         }
         throw error;
       }
-    }
-  },
-
-  getFinancialInsights: async (entries: FinancialEntry[]): Promise<string> => {
-    if (entries.length === 0) return "No data for analysis.";
-    const ai = getAiInstance();
-    if (!ai) return "API Key missing. Cannot generate insights.";
-
-    const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    const first = sorted[0];
-    const last = sorted[sorted.length - 1];
-    
-    const growthRate = first.grossAmount && last.grossAmount 
-      ? (((last.grossAmount - first.grossAmount) / first.grossAmount) * 100).toFixed(1) 
-      : "0";
-
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
-        contents: `Analyze this salary profile. Period: ${first.date} to ${last.date}. Growth: ${growthRate}%. 
-        Identify trends in specific earnings items or deductions. Note any changes in tax percentage or benefits allocation.
-        Keep it brief and professional.`,
-        config: {
-          systemInstruction: "You are a professional payroll analyst. Use bullet points.",
-        }
-      });
-
-      return response.text || "Insights pending.";
-    } catch (error) {
-      console.error("Insights Error:", error);
-      return "Could not generate insights at this time.";
     }
   }
 };
