@@ -10,6 +10,7 @@ interface AddEntryProps {
 const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isApiKeyMissing = !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'undefined';
 
   const [form, setForm] = useState<Partial<FinancialEntry>>({
     source: '',
@@ -37,8 +38,9 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
       try {
         const extracted = await geminiService.extractSalaryFromImage(base64, file.type);
         setForm(prev => ({ ...prev, ...extracted }));
-      } catch (err) {
-        alert("Digitization failed. Please check the file.");
+      } catch (err: any) {
+        console.error("Digitization Error:", err);
+        alert(err.message || "Digitization failed. Please check the file format and ensure your API key is configured.");
       } finally {
         setLoading(false);
       }
@@ -93,6 +95,20 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
 
   return (
     <div className="space-y-6 pb-12">
+      {isApiKeyMissing && (
+        <div className="bg-rose-50 border border-rose-100 p-4 rounded-3xl flex items-center gap-4">
+          <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-rose-800">Gemini API Key Missing</p>
+            <p className="text-[10px] text-rose-600 font-medium">Please set the <code className="bg-rose-100 px-1 rounded">GEMINI_API_KEY</code> environment variable to enable document digitization.</p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100">
         <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-4 text-center">Digitize Document</h3>
         <button 
