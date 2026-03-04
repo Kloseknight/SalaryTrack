@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
 import Scanner from './components/Scanner';
+import Insights from './components/Insights';
 import AuthPortal from './components/AuthPortal';
 
 const App: React.FC = () => {
@@ -57,6 +58,7 @@ const App: React.FC = () => {
       {activeView === 'dashboard' && <Dashboard entries={entries} onDataRefresh={refreshData} />}
       {activeView === 'history' && <History entries={entries} onDelete={handleDeleteEntry} />}
       {activeView === 'add' && <Scanner onEntryAdded={handleAddEntry} />}
+      {activeView === 'insights' && <Insights entries={entries} />}
     </Layout>
   );
 };

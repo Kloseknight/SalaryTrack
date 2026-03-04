@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FinancialEntry, LineItem } from '../types';
 import { geminiService } from '../services/geminiService';
+import { AlertCircle, Plus, Trash2, X } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -24,29 +25,18 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   
   useEffect(() => {
     const checkKey = async () => {
-      if (window.aistudio?.hasSelectedApiKey) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setHasUserKey(hasKey);
+      try {
+        const aistudio = (window as any).aistudio;
+        if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+          const hasKey = await aistudio.hasSelectedApiKey();
+          setHasUserKey(hasKey);
+        }
+      } catch (err) {
+        console.warn("Key check failed in scanner:", err);
       }
     };
     checkKey();
   }, []);
-
-  const handleConnectKey = async () => {
-    console.log("Attempting to connect key. window.aistudio:", window.aistudio);
-    if (window.aistudio?.openSelectKey) {
-      try {
-        await window.aistudio.openSelectKey();
-        // Assume success per platform guidelines to avoid race conditions
-        setHasUserKey(true);
-      } catch (err) {
-        console.error("Failed to open key selector:", err);
-        alert("Could not open the key selector. Please try refreshing the page.");
-      }
-    } else {
-      alert("The 'Connect Key' feature is only available when viewing this app inside the AI Studio preview. If you are here, please try refreshing.");
-    }
-  };
 
   const [form, setForm] = useState<Partial<FinancialEntry>>({
     source: '',
@@ -131,44 +121,30 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* API Key Status & Connection */}
+      {/* AI Service Status */}
       <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-2 h-2 rounded-full ${hasUserKey ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               AI Service: {hasUserKey ? 'Personal Key Active' : 'Disconnected'}
             </span>
           </div>
-          <button 
-            onClick={handleConnectKey}
-            className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
-          >
-            {hasUserKey ? 'Change Key' : 'Connect Your Own Key'}
-          </button>
+          {!hasUserKey && (
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <span className="text-[9px] font-bold text-rose-500 uppercase tracking-widest">Key Required</span>
+            </div>
+          )}
         </div>
 
         {!hasUserKey && (
-          <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl mb-4">
-            <p className="text-[10px] text-rose-800 font-bold mb-1">Personal API Key Required</p>
+          <div className="mt-4 bg-rose-50 border border-rose-100 p-4 rounded-2xl">
+            <p className="text-[10px] text-rose-800 font-bold mb-1">AI Features Unavailable</p>
             <p className="text-[9px] text-rose-600 leading-relaxed">
-              To keep this tool free for everyone, please connect your own free Gemini API key. 
-              <button onClick={() => setShowGuide(!showGuide)} className="ml-1 underline font-bold">View Setup Guide</button>
+              To use the pay stub scanner, you must connect your Gemini API key. 
+              Please refresh the page to restart the onboarding process or check your connection.
             </p>
-          </div>
-        )}
-
-        {showGuide && (
-          <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl mb-4 space-y-4">
-            <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">How to get your free API Key:</h4>
-            <ol className="text-[10px] text-slate-600 space-y-3 list-decimal ml-4 font-medium">
-              <li>Visit <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-indigo-600 underline">Google AI Studio</a>.</li>
-              <li>Sign in with your Google Account.</li>
-              <li>Click the <strong>"Get API key"</strong> button in the sidebar.</li>
-              <li>Click <strong>"Create API key"</strong>.</li>
-              <li>Copy the key and click <strong>"Connect Your Own Key"</strong> above to paste it.</li>
-            </ol>
-            <p className="text-[9px] text-slate-400 italic">Note: We now use the standard Gemini 2.5 model, so a basic free key works perfectly without needing a billing account!</p>
           </div>
         )}
       </div>
@@ -198,8 +174,8 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+      <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] sm:rounded-[2.8rem] p-6 sm:p-10 shadow-sm border border-slate-100 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           <div className="space-y-6">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">Core Details</h4>
             <div>
@@ -207,19 +183,19 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
               <input 
                 value={form.source} 
                 onChange={e => setForm({...form, source: e.target.value})} 
-                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none" 
+                className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none" 
                 placeholder="e.g. Acme Corp"
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest ml-1 mb-3 block">Net Take-Home</label>
                 <input 
                   type="number" 
                   value={form.amount || ''} 
                   onChange={e => setForm({...form, amount: Number(e.target.value)})} 
-                  className="w-full px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-emerald-800 text-sm font-bold outline-none" 
+                  className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-emerald-50 border border-emerald-100 rounded-xl sm:rounded-2xl text-emerald-800 text-xs sm:text-sm font-bold outline-none" 
                   placeholder="0.00"
                 />
               </div>
@@ -229,20 +205,20 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                   type="number" 
                   value={form.grossAmount || ''} 
                   onChange={e => setForm({...form, grossAmount: Number(e.target.value)})} 
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
+                  className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-slate-800 text-xs sm:text-sm font-bold outline-none" 
                   placeholder="0.00"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[10px] font-bold text-rose-500 uppercase tracking-widest ml-1 mb-3 block">Tax Withheld</label>
                 <input 
                   type="number" 
                   value={form.tax || ''} 
                   onChange={e => setForm({...form, tax: Number(e.target.value)})} 
-                  className="w-full px-6 py-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-800 text-sm font-bold outline-none" 
+                  className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-rose-50 border border-rose-100 rounded-xl sm:rounded-2xl text-rose-800 text-xs sm:text-sm font-bold outline-none" 
                   placeholder="0.00"
                 />
               </div>
@@ -252,7 +228,7 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                   type="number" 
                   value={form.deductions || ''} 
                   onChange={e => setForm({...form, deductions: Number(e.target.value)})} 
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 text-sm font-bold outline-none" 
+                  className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-slate-800 text-xs sm:text-sm font-bold outline-none" 
                   placeholder="0.00"
                 />
               </div>
@@ -264,7 +240,7 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                 type="number" 
                 value={form.totalBenefits || ''} 
                 onChange={e => setForm({...form, totalBenefits: Number(e.target.value)})} 
-                className="w-full px-6 py-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-800 text-sm font-bold outline-none" 
+                className="w-full px-5 sm:px-6 py-3 sm:py-4 bg-indigo-50 border border-indigo-100 rounded-xl sm:rounded-2xl text-indigo-800 text-xs sm:text-sm font-bold outline-none" 
                 placeholder="0.00"
               />
             </div>
@@ -295,9 +271,9 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                       <button 
                         type="button"
                         onClick={() => removeLineItem(idx)} 
-                        className="text-slate-300 hover:text-rose-500 transition-colors text-xl font-light"
+                        className="text-slate-300 hover:text-rose-500 transition-colors"
                       >
-                        ×
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                     <div className="flex items-center gap-3">
@@ -384,9 +360,9 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                         <button 
                           type="button"
                           onClick={() => setForm({ ...form, disbursements: form.disbursements?.filter((_, i) => i !== idx) })} 
-                          className="text-rose-500 font-bold px-2"
+                          className="text-rose-500 hover:text-rose-600 transition-colors"
                         >
-                          ×
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

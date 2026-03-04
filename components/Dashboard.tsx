@@ -156,20 +156,20 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
       {/* Top Section: Balance and Stats */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Primary Balance Card */}
-        <div className="lg:col-span-2 bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+        <div className="lg:col-span-2 bg-slate-900 rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 text-white shadow-2xl relative overflow-hidden">
           <div className="relative z-10">
             <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-[0.25em] mb-4 opacity-80">Total Gross Earnings</p>
-            <h2 className="text-5xl md:text-6xl font-extrabold tracking-tighter mb-12">{formatCurrency(stats.totalGross)}</h2>
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter mb-8 sm:mb-12 break-words">{formatCurrency(stats.totalGross)}</h2>
             
-            <div className="grid grid-cols-2 gap-8 pt-10 border-t border-white/10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 pt-8 sm:pt-10 border-t border-white/10">
               <div>
                 <p className="text-emerald-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Net Take-Home</p>
-                <p className="text-2xl md:text-3xl font-bold tracking-tight">{formatCurrency(stats.totalNet)}</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{formatCurrency(stats.totalNet)}</p>
                 <p className="text-[8px] text-white/40 mt-1 italic">Total cash received</p>
               </div>
               <div>
                 <p className="text-rose-400 text-[10px] font-bold uppercase tracking-widest mb-1.5">Taxes & Deductions</p>
-                <p className="text-2xl md:text-3xl font-bold tracking-tight">{formatCurrency(stats.totalDeductions)}</p>
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">{formatCurrency(stats.totalDeductions)}</p>
                 <p className="text-[8px] text-white/40 mt-1 italic">Total leakage from gross</p>
               </div>
             </div>
@@ -234,13 +234,13 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         </div>
 
         {/* Side Stats Card */}
-        <div className="bg-white rounded-[3rem] p-10 shadow-sm border border-slate-100 flex flex-col justify-between">
+        <div className="bg-white rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 shadow-sm border border-slate-100 flex flex-col justify-between">
           <div>
-            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">Compensation Summary</h4>
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6 sm:mb-8">Compensation Summary</h4>
             <div className="space-y-6">
               <div>
                 <p className="text-indigo-600 text-[10px] font-bold uppercase tracking-widest mb-1">Company Benefits</p>
-                <p className="text-3xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalBenefits)}</p>
+                <p className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">{formatCurrency(stats.totalBenefits)}</p>
                 <p className="text-[9px] text-slate-400 mt-1">Non-cash value provided by employer</p>
               </div>
               <div className="pt-6 border-t border-slate-50">
@@ -266,10 +266,10 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
       {/* Middle Section: Chart and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Main Chart Card */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
-          <div className="flex justify-between items-center mb-10 px-2">
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-slate-100 overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-10 px-2">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Earnings Velocity</h3>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
               <select 
                 value={availableYears.includes(timeframe) ? timeframe : ''} 
                 onChange={(e) => setTimeframe(e.target.value)}
@@ -311,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
         </div>
         
         {/* Recent Activity Table */}
-        <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100">
+        <div className="bg-white rounded-[2rem] sm:rounded-[2.5rem] p-6 sm:p-8 shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-6 px-2">
             <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em]">Recent Activity</h3>
             <button onClick={() => window.dispatchEvent(new CustomEvent('changeView', { detail: 'history' }))} className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider">View All</button>
@@ -319,19 +319,19 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
           <div className="space-y-4">
             {recentEntries.map((entry) => (
               <div key={entry.id} className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors rounded-xl px-2">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-500 shrink-0">
-                    <span className="text-[8px] font-bold uppercase">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}</span>
-                    <span className="text-sm font-black">{new Date(entry.date).toLocaleDateString('en-US', { day: 'numeric' })}</span>
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-slate-50 flex flex-col items-center justify-center text-slate-500 shrink-0">
+                    <span className="text-[7px] sm:text-[8px] font-bold uppercase">{new Date(entry.date).toLocaleDateString('en-US', { month: 'short' })}</span>
+                    <span className="text-xs sm:text-sm font-black">{new Date(entry.date).toLocaleDateString('en-US', { day: 'numeric' })}</span>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800 truncate max-w-[150px] md:max-w-[200px]">{entry.source}</p>
-                    <p className="text-[10px] text-slate-400 font-medium">{entry.jobTitle || 'Salary'}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs sm:text-sm font-bold text-slate-800 truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]">{entry.source}</p>
+                    <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">{entry.jobTitle || 'Salary'}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-black text-emerald-600">+{formatCurrency(entry.amount, true)}</p>
-                  <p className="text-[9px] text-slate-300 font-bold uppercase tracking-widest">Net</p>
+                <div className="text-right shrink-0">
+                  <p className="text-xs sm:text-sm font-black text-emerald-600">+{formatCurrency(entry.amount, true)}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-300 font-bold uppercase tracking-widest">Net</p>
                 </div>
               </div>
             ))}

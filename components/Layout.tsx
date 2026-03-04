@@ -64,8 +64,8 @@ const Layout: React.FC<LayoutProps> = ({ activeView, onViewChange, children }) =
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Header with iOS Safe Area */}
         <header className="safe-top bg-white/50 backdrop-blur-md border-b border-slate-100 shrink-0 sticky top-0 z-20">
-          <div className="pt-8 pb-4 px-8 flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tighter">
+          <div className="pt-6 sm:pt-8 pb-3 sm:pb-4 px-4 sm:px-8 flex justify-between items-center">
+            <h1 className="text-xl sm:text-3xl font-bold text-slate-900 tracking-tighter">
               {activeView === 'dashboard' && 'Portfolio'}
               {activeView === 'history' && 'Ledger'}
               {activeView === 'add' && 'Entry'}

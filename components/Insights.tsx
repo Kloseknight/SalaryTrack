@@ -151,15 +151,15 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
   return (
     <div className="space-y-8 pb-24 px-1 animate-in fade-in duration-600">
       {/* Item Progression Tracker - Expanded Visuals */}
-      <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 min-h-[500px] flex flex-col">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+      <div className="bg-white rounded-[2rem] sm:rounded-[2.8rem] p-6 sm:p-10 shadow-sm border border-slate-100 min-h-[400px] sm:min-h-[500px] flex flex-col">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 sm:mb-12">
           <div className="flex flex-col space-y-2">
             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em]">Item Progression</h4>
             <div className="flex items-baseline space-x-4">
               <select 
                 value={selectedItemName}
                 onChange={(e) => setSelectedItemName(e.target.value)}
-                className="px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none min-w-[250px]"
+                className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none min-w-[180px] sm:min-w-[250px]"
               >
                 {allItemNames.map(name => (
                   <option key={name} value={name}>{name}</option>
@@ -171,8 +171,8 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end space-y-4">
-            <div className="flex items-center space-x-2 self-end md:self-auto">
+          <div className="flex flex-col items-start md:items-end space-y-4">
+            <div className="flex items-center space-x-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
               <select 
                 value={availableYears.includes(timeframe) ? timeframe : ''} 
                 onChange={(e) => setTimeframe(e.target.value)}
@@ -195,7 +195,7 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                 ))}
               </div>
             </div>
-            <div className="sm:hidden text-right">
+            <div className="sm:hidden">
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Period Total</p>
               <p className="text-lg font-black text-indigo-600 tracking-tight">{formatCurrency(selectedItemTotal)}</p>
             </div>
@@ -260,8 +260,8 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Earnings Composition Analysis */}
-        <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 flex flex-col">
-          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Earnings Composition</h4>
+        <div className="bg-white rounded-[2.5rem] sm:rounded-[2.8rem] p-6 sm:p-10 shadow-sm border border-slate-100 flex flex-col">
+          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-8 sm:mb-10">Earnings Composition</h4>
           <div className="flex-1 flex flex-col justify-center">
             <div className="h-64 w-full mb-8">
               <ResponsiveContainer width="100%" height="100%">
@@ -270,8 +270,8 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                     data={compositionData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={50}
+                    outerRadius={70}
                     paddingAngle={5}
                     dataKey="value"
                   >
@@ -281,19 +281,19 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
                   </Pie>
                   <Tooltip 
                     formatter={(value: number | undefined) => formatCurrency(value || 0)}
-                    contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}
+                    contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', fontSize: '10px' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {compositionData.map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                    <span className="text-xs font-bold text-slate-600">{item.name}</span>
+                <div key={i} className="flex items-center justify-between p-3 sm:p-4 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-600 truncate">{item.name}</span>
                   </div>
-                  <span className="text-xs font-extrabold text-slate-800">{formatCurrency(item.value)}</span>
+                  <span className="text-[10px] sm:text-xs font-extrabold text-slate-800 shrink-0">{formatCurrency(item.value)}</span>
                 </div>
               ))}
             </div>
@@ -301,63 +301,67 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
         </div>
 
         {/* Yearly Growth Summary */}
-        <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100">
-          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Yearly Trajectory</h4>
-          <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-100/80">
-                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Year</th>
-                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Gross Total</th>
-                  <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Growth</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {yearlySummary.slice().reverse().map((y, i) => (
-                  <tr key={i} className="hover:bg-white transition-colors">
-                    <td className="p-5 text-xs font-bold text-slate-700">{y.year}</td>
-                    <td className="p-5 text-right text-xs font-extrabold text-slate-800">{formatCurrency(y.gross)}</td>
-                    <td className={`p-5 text-right text-xs font-extrabold ${y.growth >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                      {y.growth > 0 ? '+' : ''}{y.growth.toFixed(1)}%
-                    </td>
+        <div className="bg-white rounded-[2.5rem] sm:rounded-[2.8rem] p-6 sm:p-10 shadow-sm border border-slate-100">
+          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-8 sm:mb-10">Yearly Trajectory</h4>
+          <div className="bg-slate-50 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left min-w-[300px]">
+                <thead>
+                  <tr className="bg-slate-100/80">
+                    <th className="p-4 sm:p-5 text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Year</th>
+                    <th className="p-4 sm:p-5 text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Gross Total</th>
+                    <th className="p-4 sm:p-5 text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest text-right">Growth</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {yearlySummary.slice().reverse().map((y, i) => (
+                    <tr key={i} className="hover:bg-white transition-colors">
+                      <td className="p-4 sm:p-5 text-[10px] sm:text-xs font-bold text-slate-700">{y.year}</td>
+                      <td className="p-4 sm:p-5 text-right text-[10px] sm:text-xs font-extrabold text-slate-800">{formatCurrency(y.gross)}</td>
+                      <td className={`p-4 sm:p-5 text-right text-[10px] sm:text-xs font-extrabold ${y.growth >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        {y.growth > 0 ? '+' : ''}{y.growth.toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Disbursement Analysis Card */}
-      <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100">
-        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-10">Disbursement Channels</h4>
-        <div className="bg-slate-50 rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-100/80">
-                <th className="p-5 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Bank / Account</th>
-                <th className="p-5 text-right text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Lifetime Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {disbursementStats.map((d, i) => (
-                <tr key={i} className="hover:bg-white transition-colors">
-                  <td className="p-5">
-                    <p className="text-xs font-bold text-slate-700">{d.bankName}</p>
-                    <p className="text-[9px] text-slate-400 font-medium uppercase tracking-wider">{d.bankCode} • {d.accountNo}</p>
-                  </td>
-                  <td className="p-5 text-right text-xs font-extrabold text-indigo-600">
-                    {formatCurrency(d.total)}
-                  </td>
+      <div className="bg-white rounded-[2.5rem] sm:rounded-[2.8rem] p-6 sm:p-10 shadow-sm border border-slate-100">
+        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.3em] mb-8 sm:mb-10">Disbursement Channels</h4>
+        <div className="bg-slate-50 rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden border border-slate-100 shadow-inner">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[300px]">
+              <thead>
+                <tr className="bg-slate-100/80">
+                  <th className="p-4 sm:p-5 text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Bank / Account</th>
+                  <th className="p-4 sm:p-5 text-right text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Lifetime Total</th>
                 </tr>
-              ))}
-              {disbursementStats.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="p-10 text-center text-xs text-slate-400 italic">No disbursement data found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {disbursementStats.map((d, i) => (
+                  <tr key={i} className="hover:bg-white transition-colors">
+                    <td className="p-4 sm:p-5">
+                      <p className="text-[10px] sm:text-xs font-bold text-slate-700">{d.bankName}</p>
+                      <p className="text-[8px] sm:text-[9px] text-slate-400 font-medium uppercase tracking-wider">{d.bankCode} • {d.accountNo}</p>
+                    </td>
+                    <td className="p-4 sm:p-5 text-right text-[10px] sm:text-xs font-extrabold text-indigo-600">
+                      {formatCurrency(d.total)}
+                    </td>
+                  </tr>
+                ))}
+                {disbursementStats.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="p-10 text-center text-xs text-slate-400 italic">No disbursement data found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
