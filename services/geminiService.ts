@@ -3,13 +3,18 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { FinancialEntry } from "../types";
 
 const getApiKey = () => {
-  // ONLY use the user-selected API key from the platform dialog.
-  // This ensures that users use their own keys and don't consume the developer's system tokens.
+  // 1. Try platform-injected key (AI Studio Preview)
   const userKey = process.env.API_KEY;
   if (userKey && userKey !== 'undefined') {
     return userKey;
   }
   
+  // 2. Try manual key from localStorage (Shared App URL fallback)
+  const manualKey = localStorage.getItem('salarytrack_manual_key');
+  if (manualKey) {
+    return manualKey;
+  }
+
   return "";
 };
 

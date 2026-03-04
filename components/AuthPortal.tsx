@@ -48,6 +48,7 @@ const AuthPortal: React.FC<AuthPortalProps> = ({ onComplete }) => {
       // Fallback for environments where aistudio isn't injected
       const manualKey = prompt("Please enter your Gemini API Key (Key selection is currently unavailable in this view):");
       if (manualKey) {
+        localStorage.setItem('salarytrack_manual_key', manualKey);
         setHasKey(true);
         setStep('success');
       }

@@ -25,6 +25,13 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   
   useEffect(() => {
     const checkKey = async () => {
+      // Check for manual key first
+      const manualKey = localStorage.getItem('salarytrack_manual_key');
+      if (manualKey) {
+        setHasUserKey(true);
+        return;
+      }
+
       try {
         const aistudio = (window as any).aistudio;
         if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
@@ -37,6 +44,24 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
     };
     checkKey();
   }, []);
+
+  const handleConnectKey = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio && typeof aistudio.openSelectKey === 'function') {
+      try {
+        await aistudio.openSelectKey();
+        setHasUserKey(true);
+      } catch (err) {
+        console.error("Failed to open key selector:", err);
+      }
+    } else {
+      const manualKey = prompt("Please enter your Gemini API Key:");
+      if (manualKey) {
+        localStorage.setItem('salarytrack_manual_key', manualKey);
+        setHasUserKey(true);
+      }
+    }
+  };
 
   const [form, setForm] = useState<Partial<FinancialEntry>>({
     source: '',
@@ -139,12 +164,19 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
         </div>
 
         {!hasUserKey && (
-          <div className="mt-4 bg-rose-50 border border-rose-100 p-4 rounded-2xl">
-            <p className="text-[10px] text-rose-800 font-bold mb-1">AI Features Unavailable</p>
-            <p className="text-[9px] text-rose-600 leading-relaxed">
-              To use the pay stub scanner, you must connect your Gemini API key. 
-              Please refresh the page to restart the onboarding process or check your connection.
-            </p>
+          <div className="mt-4 bg-rose-50 border border-rose-100 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <p className="text-[10px] text-rose-800 font-bold mb-1">AI Features Unavailable</p>
+              <p className="text-[9px] text-rose-600 leading-relaxed">
+                To use the pay stub scanner, you must connect your Gemini API key. 
+              </p>
+            </div>
+            <button 
+              onClick={handleConnectKey}
+              className="px-4 py-2 bg-rose-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-rose-700 transition-colors shrink-0"
+            >
+              Connect Key
+            </button>
           </div>
         )}
       </div>
