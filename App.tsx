@@ -6,11 +6,14 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import History from './components/History';
 import Scanner from './components/Scanner';
-import Insights from './components/Insights';
+import AuthPortal from './components/AuthPortal';
 
 const App: React.FC = () => {
   const [entries, setEntries] = useState<FinancialEntry[]>([]);
   const [activeView, setActiveView] = useState<AppView>('dashboard');
+  const [isOnboarded, setIsOnboarded] = useState<boolean>(() => {
+    return localStorage.getItem('salary_track_onboarded') === 'true';
+  });
 
   const refreshData = () => {
     setEntries(storageService.getEntries());
@@ -40,12 +43,20 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('salary_track_onboarded', 'true');
+    setIsOnboarded(true);
+  };
+
+  if (!isOnboarded) {
+    return <AuthPortal onComplete={handleOnboardingComplete} />;
+  }
+
   return (
     <Layout activeView={activeView} onViewChange={setActiveView}>
       {activeView === 'dashboard' && <Dashboard entries={entries} onDataRefresh={refreshData} />}
       {activeView === 'history' && <History entries={entries} onDelete={handleDeleteEntry} />}
       {activeView === 'add' && <Scanner onEntryAdded={handleAddEntry} />}
-      {activeView === 'insights' && <Insights entries={entries} />}
     </Layout>
   );
 };
