@@ -14,6 +14,45 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
   const [selectedItemName, setSelectedItemName] = useState<string>('');
   const [timeframe, setTimeframe] = useState<'1Y' | 'YTD' | 'ALL' | string>('1Y');
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [hasUserKey, setHasUserKey] = useState(false);
+  const [insights, setInsights] = useState<string>('Loading insights...');
+  const [loadingInsights, setLoadingInsights] = useState(false);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setHasUserKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleConnectKey = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      setHasUserKey(true);
+    }
+  };
+
+  useEffect(() => {
+    const fetchInsights = async () => {
+      if (entries.length > 0 && hasUserKey) {
+        setLoadingInsights(true);
+        try {
+          const res = await geminiService.getFinancialInsights(entries);
+          setInsights(res);
+        } catch (err) {
+          setInsights("Failed to load insights.");
+        } finally {
+          setLoadingInsights(false);
+        }
+      } else if (!hasUserKey) {
+        setInsights("Connect your API key to generate AI insights.");
+      }
+    };
+    fetchInsights();
+  }, [entries, hasUserKey]);
 
   const availableYears = useMemo(() => {
     const years = new Set<string>();
@@ -151,6 +190,40 @@ const Insights: React.FC<InsightsProps> = ({ entries }) => {
 
   return (
     <div className="space-y-8 pb-24 px-1 animate-in fade-in duration-600">
+      {/* API Key Status & Connection */}
+      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${hasUserKey ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              AI Insights: {hasUserKey ? 'Active' : 'Disconnected'}
+            </span>
+          </div>
+          <button 
+            onClick={handleConnectKey}
+            className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+          >
+            {hasUserKey ? 'Change Key' : 'Connect Key for Insights'}
+          </button>
+        </div>
+      </div>
+
+      {/* AI Insights Summary */}
+      <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h4 className="text-[10px] font-extrabold text-indigo-300 uppercase tracking-[0.3em] mb-6">AI Financial Analysis</h4>
+          <div className="text-sm leading-relaxed text-slate-300 font-medium whitespace-pre-line">
+            {loadingInsights ? (
+              <div className="flex items-center gap-3 animate-pulse">
+                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" />
+                <span>Generating professional analysis...</span>
+              </div>
+            ) : insights}
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[100px] -mr-32 -mt-32"></div>
+      </div>
+
       {/* Item Progression Tracker - Expanded Visuals */}
       <div className="bg-white rounded-[2.8rem] p-10 shadow-sm border border-slate-100 min-h-[500px] flex flex-col">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">

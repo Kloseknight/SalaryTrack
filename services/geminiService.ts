@@ -3,20 +3,27 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { FinancialEntry } from "../types";
 
 const getApiKey = () => {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key || key === 'undefined') {
-    console.warn("GEMINI_API_KEY is missing. Please set it in your environment variables.");
-    return "";
+  // ONLY use the user-selected API key from the platform dialog.
+  // This ensures that users use their own keys and don't consume the developer's system tokens.
+  const userKey = process.env.API_KEY;
+  if (userKey && userKey !== 'undefined') {
+    return userKey;
   }
-  return key;
+  
+  return "";
 };
 
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+const getAiInstance = () => {
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+  return new GoogleGenAI({ apiKey });
+};
 
 export const geminiService = {
   extractSalaryFromImage: async (base64Data: string, mimeType: string = "image/jpeg"): Promise<any> => {
-    if (!getApiKey()) {
-      throw new Error("API Key is missing. Please configure GEMINI_API_KEY.");
+    const ai = getAiInstance();
+    if (!ai) {
+      throw new Error("API Key is missing. Please configure GEMINI_API_KEY or connect your own key.");
     }
 
     let attempts = 0;
@@ -116,7 +123,8 @@ export const geminiService = {
 
   getFinancialInsights: async (entries: FinancialEntry[]): Promise<string> => {
     if (entries.length === 0) return "No data for analysis.";
-    if (!getApiKey()) return "API Key missing. Cannot generate insights.";
+    const ai = getAiInstance();
+    if (!ai) return "API Key missing. Cannot generate insights.";
 
     const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const first = sorted[0];

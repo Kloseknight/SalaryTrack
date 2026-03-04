@@ -1,7 +1,16 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FinancialEntry, LineItem } from '../types';
 import { geminiService } from '../services/geminiService';
+
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
 
 interface AddEntryProps {
   onEntryAdded: (entry: FinancialEntry) => void;
@@ -9,8 +18,27 @@ interface AddEntryProps {
 
 const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
   const [loading, setLoading] = useState(false);
+  const [hasUserKey, setHasUserKey] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isApiKeyMissing = !process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'undefined';
+  
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setHasUserKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleConnectKey = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      // After opening the dialog, we assume success or the user will try again
+      setHasUserKey(true);
+    }
+  };
 
   const [form, setForm] = useState<Partial<FinancialEntry>>({
     source: '',
@@ -95,19 +123,47 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
 
   return (
     <div className="space-y-6 pb-12">
-      {isApiKeyMissing && (
-        <div className="bg-rose-50 border border-rose-100 p-4 rounded-3xl flex items-center gap-4">
-          <div className="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center shrink-0">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+      {/* API Key Status & Connection */}
+      <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${hasUserKey ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              AI Service: {hasUserKey ? 'Personal Key Active' : 'Disconnected'}
+            </span>
           </div>
-          <div>
-            <p className="text-xs font-bold text-rose-800">Gemini API Key Missing</p>
-            <p className="text-[10px] text-rose-600 font-medium">Please set the <code className="bg-rose-100 px-1 rounded">GEMINI_API_KEY</code> environment variable to enable document digitization.</p>
-          </div>
+          <button 
+            onClick={handleConnectKey}
+            className="text-[9px] font-bold text-indigo-600 uppercase px-3 py-1.5 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors"
+          >
+            {hasUserKey ? 'Change Key' : 'Connect Your Own Key'}
+          </button>
         </div>
-      )}
+
+        {!hasUserKey && (
+          <div className="bg-rose-50 border border-rose-100 p-4 rounded-2xl mb-4">
+            <p className="text-[10px] text-rose-800 font-bold mb-1">Personal API Key Required</p>
+            <p className="text-[9px] text-rose-600 leading-relaxed">
+              To keep this tool free for everyone, please connect your own free Gemini API key. 
+              <button onClick={() => setShowGuide(!showGuide)} className="ml-1 underline font-bold">View Setup Guide</button>
+            </p>
+          </div>
+        )}
+
+        {showGuide && (
+          <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl mb-4 space-y-4">
+            <h4 className="text-[10px] font-bold text-slate-800 uppercase tracking-widest">How to get your free API Key:</h4>
+            <ol className="text-[10px] text-slate-600 space-y-3 list-decimal ml-4 font-medium">
+              <li>Visit <a href="https://aistudio.google.com" target="_blank" rel="noreferrer" className="text-indigo-600 underline">Google AI Studio</a>.</li>
+              <li>Sign in with your Google Account.</li>
+              <li>Click the <strong>"Get API key"</strong> button in the sidebar.</li>
+              <li>Click <strong>"Create API key"</strong> (choose a project or create a new one).</li>
+              <li>Copy the key and click <strong>"Connect Your Own Key"</strong> above to paste it.</li>
+            </ol>
+            <p className="text-[9px] text-slate-400 italic">Note: The free tier allows up to 15 requests per minute, which is plenty for personal use!</p>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100">
         <h3 className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-4 text-center">Digitize Document</h3>
