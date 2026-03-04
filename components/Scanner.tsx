@@ -202,27 +202,40 @@ const AddEntry: React.FC<AddEntryProps> = ({ onEntryAdded }) => {
                   + Add Entry
                 </button>
               </div>
-              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
                 {form.lineItems?.map((item, idx) => (
-                  <div key={idx} className="bg-slate-50 p-4 rounded-2xl flex items-center justify-between gap-4 border border-slate-100 group">
-                    <input 
-                      value={item.name} 
-                      onChange={(e) => updateLineItem(idx, 'name', e.target.value)} 
-                      className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 w-full focus:ring-0" 
-                    />
-                    <div className="flex items-center gap-3 shrink-0">
+                  <div key={idx} className="bg-slate-50 p-4 rounded-2xl space-y-3 border border-slate-100 group">
+                    <div className="flex items-center justify-between gap-4">
                       <input 
-                        type="number" 
-                        value={item.amount} 
-                        onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))} 
-                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold w-20 text-right text-slate-600 outline-none" 
+                        value={item.name} 
+                        onChange={(e) => updateLineItem(idx, 'name', e.target.value)} 
+                        className="bg-transparent border-none p-0 text-xs font-bold text-slate-700 w-full focus:ring-0" 
+                        placeholder="Item Name"
                       />
                       <button 
+                        type="button"
                         onClick={() => removeLineItem(idx)} 
                         className="text-slate-300 hover:text-rose-500 transition-colors text-xl font-light"
                       >
                         ×
                       </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <select 
+                        value={item.type} 
+                        onChange={(e) => updateLineItem(idx, 'type', e.target.value)}
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-[10px] font-bold text-slate-500 outline-none"
+                      >
+                        <option value="earning">Earning</option>
+                        <option value="deduction">Deduction</option>
+                        <option value="benefit">Benefit</option>
+                      </select>
+                      <input 
+                        type="number" 
+                        value={item.amount} 
+                        onChange={(e) => updateLineItem(idx, 'amount', Number(e.target.value))} 
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold w-full text-right text-slate-600 outline-none" 
+                      />
                     </div>
                   </div>
                 ))}

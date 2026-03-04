@@ -87,8 +87,48 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
     const totalGross = entries.reduce((acc, e) => acc + (e.grossAmount || 0), 0);
     const totalDeductions = entries.reduce((acc, e) => acc + (e.deductions || 0) + (e.tax || 0), 0);
     const totalBenefits = entries.reduce((acc, e) => acc + (e.totalBenefits || 0), 0);
-    return { totalNet, totalGross, totalDeductions, totalBenefits };
+
+    // Detailed breakdown
+    const deductionBreakdown: Record<string, number> = {};
+    const earningBreakdown: Record<string, number> = {};
+    const disbursementBreakdown: Record<string, number> = {};
+    
+    entries.forEach(e => {
+      if (e.lineItems && e.lineItems.length > 0) {
+        e.lineItems.forEach(item => {
+          if (item.type === 'deduction') {
+            deductionBreakdown[item.name] = (deductionBreakdown[item.name] || 0) + item.amount;
+          } else if (item.type === 'earning') {
+            earningBreakdown[item.name] = (earningBreakdown[item.name] || 0) + item.amount;
+          }
+        });
+      } else {
+        // Fallback if no line items
+        if (e.tax) deductionBreakdown['Tax'] = (deductionBreakdown['Tax'] || 0) + e.tax;
+        if (e.deductions) deductionBreakdown['Other Deductions'] = (deductionBreakdown['Other Deductions'] || 0) + e.deductions;
+        if (e.grossAmount) earningBreakdown['Base Salary'] = (earningBreakdown['Base Salary'] || 0) + e.grossAmount;
+      }
+
+      if (e.disbursements) {
+        e.disbursements.forEach(d => {
+          const key = d.bankName || 'Other Account';
+          disbursementBreakdown[key] = (disbursementBreakdown[key] || 0) + d.amount;
+        });
+      }
+    });
+
+    return { 
+      totalNet, 
+      totalGross, 
+      totalDeductions, 
+      totalBenefits, 
+      deductionBreakdown: Object.entries(deductionBreakdown).sort((a, b) => b[1] - a[1]),
+      earningBreakdown: Object.entries(earningBreakdown).sort((a, b) => b[1] - a[1]),
+      disbursementBreakdown: Object.entries(disbursementBreakdown).sort((a, b) => b[1] - a[1])
+    };
   }, [entries]);
+
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   if (entries.length === 0) {
     return (
@@ -133,6 +173,59 @@ const Dashboard: React.FC<DashboardProps> = ({ entries, onDataRefresh }) => {
                 <p className="text-[8px] text-white/40 mt-1 italic">Total leakage from gross</p>
               </div>
             </div>
+
+            <button 
+              onClick={() => setShowBreakdown(!showBreakdown)}
+              className="mt-8 flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-indigo-300 hover:text-white transition-colors"
+            >
+              <span>{showBreakdown ? 'Hide Detailed Breakdown' : 'View Detailed Breakdown'}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {showBreakdown && (
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-300">
+                <div>
+                  <h4 className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-4">Earnings Components</h4>
+                  <div className="space-y-3">
+                    {stats.earningBreakdown.map(([name, amount]) => (
+                      <div key={name} className="flex justify-between items-center">
+                        <span className="text-xs text-white/60 font-medium">{name}</span>
+                        <span className="text-xs font-bold text-white">{formatCurrency(amount)}</span>
+                      </div>
+                    ))}
+                    {stats.earningBreakdown.length === 0 && <p className="text-[10px] text-white/30 italic">No detailed earnings data available</p>}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-[9px] font-black text-rose-400 uppercase tracking-widest mb-4">Deductions Components</h4>
+                  <div className="space-y-3">
+                    {stats.deductionBreakdown.map(([name, amount]) => (
+                      <div key={name} className="flex justify-between items-center">
+                        <span className="text-xs text-white/60 font-medium">{name}</span>
+                        <span className="text-xs font-bold text-white">{formatCurrency(amount)}</span>
+                      </div>
+                    ))}
+                    {stats.deductionBreakdown.length === 0 && <p className="text-[10px] text-white/30 italic">No detailed deduction data available</p>}
+                  </div>
+                </div>
+
+                {stats.disbursementBreakdown && stats.disbursementBreakdown.length > 0 && (
+                  <div className="md:col-span-2 pt-8 border-t border-white/5">
+                    <h4 className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-4">Net Distribution (Disbursements)</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {stats.disbursementBreakdown.map(([name, amount]) => (
+                        <div key={name} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                          <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mb-1">{name}</p>
+                          <p className="text-sm font-black text-white">{formatCurrency(amount)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Abstract Background Decoration */}
